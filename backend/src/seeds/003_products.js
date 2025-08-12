@@ -1,0 +1,136 @@
+/**
+ * @param { import("knex").Knex } knex
+ * @returns { Promise<void> }
+ */
+exports.seed = async function (knex) {
+  // Deletes ALL existing entries
+  await knex("products").del();
+
+  // Inserts seed entries
+  await knex("products").insert([
+    {
+      id: 1,
+      sku: "LAPTOP-001",
+      name: 'Business Laptop Pro 15"',
+      description:
+        "High-performance laptop for business use with 16GB RAM and 512GB SSD",
+      category: "Electronics",
+      sale_price: 1299.99,
+      cost_price: 899.99,
+      reorder_point: 25,
+      image_url: "https://example.com/images/laptop-001.jpg",
+      active: true,
+    },
+    {
+      id: 2,
+      sku: "MOUSE-001",
+      name: "Wireless Optical Mouse",
+      description: "Ergonomic wireless mouse with precision tracking",
+      category: "Electronics",
+      sale_price: 29.99,
+      cost_price: 15.99,
+      reorder_point: 100,
+      image_url: "https://example.com/images/mouse-001.jpg",
+      active: true,
+    },
+    {
+      id: 3,
+      sku: "DESK-001",
+      name: "Standing Desk Adjustable",
+      description: "Height-adjustable standing desk with electric motor",
+      category: "Furniture",
+      sale_price: 599.99,
+      cost_price: 399.99,
+      reorder_point: 10,
+      image_url: "https://example.com/images/desk-001.jpg",
+      active: true,
+    },
+    {
+      id: 4,
+      sku: "CHAIR-001",
+      name: "Ergonomic Office Chair",
+      description:
+        "Comfortable office chair with lumbar support and adjustable height",
+      category: "Furniture",
+      sale_price: 349.99,
+      cost_price: 199.99,
+      reorder_point: 15,
+      image_url: "https://example.com/images/chair-001.jpg",
+      active: true,
+    },
+    {
+      id: 5,
+      sku: "MONITOR-001",
+      name: '27" 4K Monitor',
+      description: "Ultra HD 4K monitor with IPS panel and USB-C connectivity",
+      category: "Electronics",
+      sale_price: 449.99,
+      cost_price: 299.99,
+      reorder_point: 20,
+      image_url: "https://example.com/images/monitor-001.jpg",
+      active: true,
+    },
+    {
+      id: 6,
+      sku: "KEYBOARD-001",
+      name: "Mechanical Keyboard RGB",
+      description: "Mechanical gaming keyboard with RGB backlighting",
+      category: "Electronics",
+      sale_price: 129.99,
+      cost_price: 79.99,
+      reorder_point: 50,
+      image_url: "https://example.com/images/keyboard-001.jpg",
+      active: true,
+    },
+    {
+      id: 7,
+      sku: "TABLET-001",
+      name: 'Business Tablet 10"',
+      description: "10-inch tablet for business presentations and mobile work",
+      category: "Electronics",
+      sale_price: 399.99,
+      cost_price: 249.99,
+      reorder_point: 30,
+      image_url: "https://example.com/images/tablet-001.jpg",
+      active: true,
+    },
+    {
+      id: 8,
+      sku: "PRINTER-001",
+      name: "Laser Printer Multifunction",
+      description:
+        "All-in-one laser printer with scanning and copying capabilities",
+      category: "Office Equipment",
+      sale_price: 299.99,
+      cost_price: 199.99,
+      reorder_point: 8,
+      image_url: "https://example.com/images/printer-001.jpg",
+      active: true,
+    },
+    {
+      id: 9,
+      sku: "HEADSET-001",
+      name: "Wireless Noise-Canceling Headset",
+      description:
+        "Professional wireless headset with active noise cancellation",
+      category: "Electronics",
+      sale_price: 199.99,
+      cost_price: 119.99,
+      reorder_point: 40,
+      image_url: "https://example.com/images/headset-001.jpg",
+      active: true,
+    },
+    {
+      id: 10,
+      sku: "CABLE-001",
+      name: "USB-C Cable 6ft",
+      description: "High-speed USB-C cable for charging and data transfer",
+      category: "Accessories",
+      sale_price: 19.99,
+      cost_price: 8.99,
+      reorder_point: 200,
+      image_url: "https://example.com/images/cable-001.jpg",
+      active: true,
+    },
+  ]);
+};
