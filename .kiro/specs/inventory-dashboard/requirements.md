@@ -175,19 +175,23 @@ The inventory dashboard is a comprehensive web application that provides warehou
 
 ### Requirement 14
 
-**User Story:** As a warehouse manager, I want to add new products to the inventory system, so that I can expand the product catalog and track new items.
+**User Story:** As a warehouse manager, I want to add new products with complete details including per-warehouse stock levels, so that I can expand the product catalog and establish initial inventory across all locations.
 
 #### Acceptance Criteria
 
 1. WHEN accessing the products page THEN the system SHALL display an "Add Product" button
-2. WHEN clicking "Add Product" THEN the system SHALL open a form modal for product creation
-3. WHEN the add product form opens THEN the system SHALL require fields: name, SKU, category, sale price, and cost price
-4. WHEN the add product form opens THEN the system SHALL provide optional fields: description, image upload, and supplier selection
-5. WHEN submitting the form THEN the system SHALL validate all required fields and display appropriate error messages
-6. WHEN submitting a valid form THEN the system SHALL create the product and refresh the products table
-7. WHEN creating a product THEN the system SHALL ensure SKU uniqueness and display error if duplicate
-8. WHEN uploading an image THEN the system SHALL validate file type and size restrictions
-9. WHEN the form is submitted successfully THEN the system SHALL close the modal and show a success message
+2. WHEN clicking "Add Product" THEN the system SHALL open a comprehensive form modal for product creation
+3. WHEN the add product form opens THEN the system SHALL require fields: name, SKU, category, cost price, sale price, and reorder point
+4. WHEN the add product form opens THEN the system SHALL provide optional fields: description and image URL
+5. WHEN the add product form opens THEN the system SHALL display a section for setting initial stock levels for each warehouse location
+6. WHEN displaying warehouse stock inputs THEN the system SHALL show each warehouse name with a quantity input field
+7. WHEN the reorder point field is displayed THEN the system SHALL accept numeric values and validate minimum threshold requirements
+8. WHEN the image URL field is provided THEN the system SHALL validate the URL format and display a preview if valid
+9. WHEN submitting the form THEN the system SHALL validate all required fields and display appropriate error messages
+10. WHEN submitting a valid form THEN the system SHALL create the product with specified stock levels across warehouses
+11. WHEN creating a product THEN the system SHALL ensure SKU uniqueness and display error if duplicate
+12. WHEN the form is submitted successfully THEN the system SHALL close the modal, refresh the products table, and show a success message
+13. WHEN warehouse stock levels are set during creation THEN the system SHALL create corresponding inventory records for each warehouse
 
 ### Requirement 15
 
@@ -251,3 +255,20 @@ The inventory dashboard is a comprehensive web application that provides warehou
 6. WHEN clicking on supplier information THEN the system SHALL provide option to view full supplier profile
 7. WHEN no supplier is assigned THEN the system SHALL display appropriate placeholder text
 8. WHEN supplier information changes THEN the system SHALL update product displays in real-time
+
+### Requirement 19
+
+**User Story:** As a warehouse manager, I want to set and monitor reorder points for products, so that I can maintain optimal stock levels and prevent stockouts.
+
+#### Acceptance Criteria
+
+1. WHEN creating or editing a product THEN the system SHALL allow setting a reorder point threshold value
+2. WHEN displaying products THEN the system SHALL compare current stock levels against reorder points
+3. WHEN a product's total stock falls below its reorder point THEN the system SHALL mark it as "Low Stock"
+4. WHEN a product reaches zero stock THEN the system SHALL mark it as "Out of Stock" regardless of reorder point
+5. WHEN calculating stock status THEN the system SHALL aggregate quantities across all warehouse locations
+6. WHEN displaying low stock products THEN the system SHALL provide visual indicators (colors, icons, badges)
+7. WHEN the dashboard loads THEN the system SHALL include reorder point status in summary metrics
+8. WHEN filtering by stock status THEN the system SHALL use reorder point calculations to determine "Low Stock" classification
+9. WHEN reorder points are updated THEN the system SHALL recalculate stock status across all affected displays
+10. WHEN no reorder point is set THEN the system SHALL treat the product as having adequate stock unless quantity is zero

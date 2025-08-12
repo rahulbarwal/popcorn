@@ -122,16 +122,21 @@ graph TB
 
 #### Product Form Component
 
-- **Purpose**: Handle product creation and editing operations
+- **Purpose**: Handle comprehensive product creation and editing operations with per-warehouse stock management
 - **Features**:
-  - Required fields: name, SKU, category, sale price, cost price
-  - Optional fields: description, image upload, supplier selection
-  - Real-time form validation
-  - SKU uniqueness checking
-  - Image file type and size validation
-  - Supplier dropdown with search capability
-  - Success and error message handling
-  - Form reset and cancel functionality
+  - Required fields: name, SKU, category, cost price, sale price, reorder point
+  - Optional fields: description, image URL
+  - Per-warehouse stock level inputs with dynamic warehouse list
+  - Real-time form validation with field-specific error messages
+  - SKU uniqueness checking with immediate feedback
+  - Image URL validation with preview functionality
+  - Reorder point validation (must be positive number)
+  - Warehouse stock quantity validation (non-negative numbers)
+  - Form sections: Basic Info, Pricing, Stock Management, Image
+  - Success and error message handling with detailed feedback
+  - Form reset and cancel functionality with unsaved changes warning
+  - Auto-save draft functionality for long forms
+  - Responsive form layout for mobile devices
 
 ### Backend Services
 
@@ -164,14 +169,15 @@ graph TB
 - **Endpoints**:
   - `GET /api/products` - Product list with filtering, sorting, and pagination
   - `GET /api/products/{id}` - Detailed product information with stock breakdown
-  - `POST /api/products` - Create new product
+  - `POST /api/products` - Create new product with per-warehouse stock levels
   - `PUT /api/products/{id}` - Update existing product
   - `DELETE /api/products/{id}` - Delete product with validation
-  - `POST /api/products/{id}/image` - Upload product image
   - `GET /api/products/categories` - Available product categories
   - `GET /api/products/{id}/suppliers` - Product supplier relationships
   - `POST /api/products/{id}/suppliers` - Add supplier to product
   - `DELETE /api/products/{id}/suppliers/{supplierId}` - Remove supplier from product
+  - `GET /api/products/validate-sku/{sku}` - Validate SKU uniqueness
+  - `GET /api/warehouses` - Available warehouse locations for stock setup
 
 ## Data Models
 
@@ -191,6 +197,7 @@ Based on your requirements, the database schema includes:
 - category
 - sale_price
 - cost_price
+- reorder_point
 - image_url
 - created_at
 - updated_at
@@ -422,6 +429,180 @@ Based on your requirements, the database schema includes:
   "last_updated": "2024-12-08T10:30:00Z"
 }
 ```
+
+#### Product Creation Request/Response
+
+**Create Product Request**
+
+```json
+{
+  "name": "New Product Name",
+  "sku": "NP-001",
+  "description": "Product description",
+  "category": "Electronics",
+  "cost_price": 25.5,
+  "sale_price": 45.99,
+  "reorder_point": 50,
+  "image_url": "https://example.com/image.jpg",
+  "warehouse_stock": [
+    {
+      "warehouse_id": 1,
+      "initial_quantity": 100
+    },
+    {
+      "warehouse_id": 2,
+      "initial_quantity": 50
+    }
+  ]
+}
+```
+
+**Create Product Response**
+
+```json
+{
+  "product": {
+    "id": 123,
+    "name": "New Product Name",
+    "sku": "NP-001",
+    "description": "Product description",
+    "category": "Electronics",
+    "cost_price": 25.5,
+    "sale_price": 45.99,
+    "reorder_point": 50,
+    "image_url": "https://example.com/image.jpg",
+    "created_at": "2024-12-08T10:30:00Z",
+    "stock_levels": [
+      {
+        "warehouse_id": 1,
+        "warehouse_name": "Main Warehouse",
+        "quantity": 100,
+        "unit_cost": 25.5
+      },
+      {
+        "warehouse_id": 2,
+        "warehouse_name": "Secondary Warehouse",
+        "quantity": 50,
+        "unit_cost": 25.5
+      }
+    ],
+    "total_stock": 150,
+    "stock_status": "adequate"
+  },
+  "message": "Product created successfully"
+}
+```
+
+#### Warehouse List Response
+
+```json
+{
+  "warehouses": [
+    {
+      "id": 1,
+      "name": "Main Warehouse",
+      "address": "123 Main St, City, State 12345",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Secondary Warehouse",
+      "address": "456 Oak Ave, City, State 12345",
+      "active": true
+    }
+  ]
+}
+```
+
+## Product Creation Workflow
+
+### Form Design and User Experience
+
+The product creation modal follows a structured approach to collect comprehensive product information:
+
+#### Form Layout
+
+1. **Modal Structure**:
+
+   - Large modal (800px width) with scrollable content
+   - Header with "Add New Product" title and close button
+   - Form sections with clear visual separation
+   - Footer with Cancel and Save buttons
+
+2. **Form Sections**:
+
+   - **Basic Information**: Name, SKU, Category, Description
+   - **Pricing**: Cost Price, Sale Price
+   - **Inventory Management**: Reorder Point, Per-warehouse stock levels
+   - **Media**: Image URL with preview
+
+3. **Warehouse Stock Section**:
+   - Dynamic list of all active warehouses
+   - Each warehouse shows: Name, Address, Quantity input field
+   - Default quantity of 0 for all warehouses
+   - Visual indicators for required vs optional stock setup
+
+#### Validation Rules
+
+1. **Required Field Validation**:
+
+   - Name: 1-255 characters, no special characters except hyphens and spaces
+   - SKU: 3-50 characters, alphanumeric with hyphens, must be unique
+   - Category: Must be selected from predefined list
+   - Cost Price: Positive decimal number, max 2 decimal places
+   - Sale Price: Positive decimal number, max 2 decimal places, must be >= cost price
+   - Reorder Point: Non-negative integer
+
+2. **Optional Field Validation**:
+
+   - Description: Max 1000 characters
+   - Image URL: Valid URL format, optional preview validation
+   - Warehouse Stock: Non-negative integers, defaults to 0
+
+3. **Business Logic Validation**:
+   - SKU uniqueness check via API call
+   - Sale price must be greater than or equal to cost price
+   - At least one warehouse must have stock > 0 (warning, not error)
+   - Image URL accessibility check (optional)
+
+#### Form Behavior
+
+1. **Real-time Validation**:
+
+   - Field validation on blur and form submission
+   - SKU uniqueness check with 500ms debounce
+   - Visual feedback with error messages below fields
+   - Form submission disabled until all required fields are valid
+
+2. **User Experience Features**:
+
+   - Auto-focus on first field when modal opens
+   - Tab navigation through all form fields
+   - Escape key to close modal (with unsaved changes warning)
+   - Loading states during SKU validation and form submission
+   - Success message and automatic modal close on successful creation
+
+3. **Error Handling**:
+   - Field-level error messages with specific guidance
+   - Form-level error summary for submission failures
+   - Network error handling with retry options
+   - Validation error persistence until resolved
+
+### Backend Processing
+
+1. **Product Creation Transaction**:
+
+   - Create product record with basic information
+   - Create inventory records for each warehouse with stock > 0
+   - Calculate initial stock status based on reorder point
+   - Update dashboard metrics and caches
+   - Return complete product data with stock breakdown
+
+2. **Data Integrity**:
+   - Database transaction ensures all-or-nothing creation
+   - SKU uniqueness enforced at database level
+   - Audit trail for product creation events
+   - Rollback mechanism for failed creations
 
 ## Error Handling
 

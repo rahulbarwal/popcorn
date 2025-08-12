@@ -313,26 +313,30 @@
   - _Requirements: 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10_
 
 - [ ] 20. Build products management service and API endpoints
-- [ ] 20.1 Implement product CRUD service functions
+- [ ] 20.1 Implement enhanced product CRUD service functions with reorder point management
 
-  - Write service functions for product creation, reading, updating, and deletion
-  - Create database queries for product listing with filtering, sorting, and pagination
-  - Implement product validation logic including SKU uniqueness checking
-  - Add product-supplier relationship management functions
+  - Write service functions for product creation with per-warehouse stock level initialization
+  - Create database queries for product listing with reorder point status calculation
+  - Implement product validation logic including SKU uniqueness and reorder point validation
+  - Add stock status calculation logic based on reorder points (adequate, low stock, out of stock)
+  - Create warehouse stock level management functions for product creation
+  - Implement product-supplier relationship management functions
   - Create product category management functions
-  - _Requirements: 12.1, 12.6, 12.7, 14.3, 14.6, 14.7, 15.3, 15.4, 15.6, 15.7, 16.5, 16.6, 17.2, 17.3, 17.4, 18.2_
+  - Add database transaction handling for product creation with inventory records
+  - _Requirements: 12.1, 12.6, 12.7, 14.3, 14.6, 14.7, 14.10, 14.11, 14.13, 15.3, 15.4, 15.6, 15.7, 16.5, 16.6, 17.2, 17.3, 17.4, 18.2, 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7, 19.8, 19.9, 19.10_
 
-- [ ] 20.2 Create products management API endpoints
+- [ ] 20.2 Create enhanced products management API endpoints
 
   - Build GET /api/products endpoint with filtering, sorting, and pagination
-  - Create GET /api/products/{id} endpoint for detailed product information
-  - Implement POST /api/products endpoint for product creation with validation
+  - Create GET /api/products/{id} endpoint for detailed product information with stock breakdown
+  - Implement POST /api/products endpoint for product creation with per-warehouse stock levels
   - Build PUT /api/products/{id} endpoint for product updates
   - Create DELETE /api/products/{id} endpoint with safety checks
-  - Add POST /api/products/{id}/image endpoint for image uploads
-  - Implement GET /api/products/categories endpoint
-  - Write unit tests for all product management API endpoints
-  - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 13.1, 13.2, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8, 15.9, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9_
+  - Implement GET /api/products/categories endpoint for category dropdown
+  - Add GET /api/products/validate-sku/{sku} endpoint for real-time SKU validation
+  - Create GET /api/warehouses endpoint for warehouse list in product form
+  - Write unit tests for all enhanced product management API endpoints
+  - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 13.1, 13.2, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 14.10, 14.11, 14.12, 14.13, 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8, 15.9, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7, 19.8, 19.9, 19.10_
 
 - [ ] 21. Build products page frontend component
 - [ ] 21.1 Create products table component
@@ -393,25 +397,46 @@
   - Write component tests for product detail modal functionality
   - _Requirements: 13.8, 7.4_
 
-- [ ] 24. Build product form component for add/edit operations
-- [ ] 24.1 Create product form with validation
+- [ ] 24. Build comprehensive product form component with per-warehouse stock management
+- [ ] 24.1 Create enhanced product form with all required fields
 
-  - Build form component with required fields: name, SKU, category, sale price, cost price
-  - Add optional fields: description, image upload, supplier selection
-  - Implement real-time form validation with error messages
-  - Create SKU uniqueness validation with backend checking
-  - Add image upload with file type and size validation
-  - _Requirements: 14.3, 14.4, 14.5, 14.7, 14.8, 15.3, 15.4, 15.5, 15.6_
+  - Build form component with required fields: name, SKU, category, cost price, sale price, reorder point
+  - Add optional fields: description, image URL (with preview)
+  - Implement per-warehouse stock level inputs with dynamic warehouse list
+  - Create form sections: Basic Info, Pricing, Stock Management, Image
+  - Add real-time form validation with field-specific error messages
+  - _Requirements: 14.3, 14.4, 14.5, 14.6, 14.10, 14.13, 19.1_
 
-- [ ] 24.2 Add form submission and state management
+- [ ] 24.2 Implement advanced form validation and user experience
 
-  - Implement form submission for both create and edit modes
-  - Add loading states during form submission
-  - Create success and error message handling
-  - Add form reset and cancel functionality
-  - Implement supplier dropdown with search capability
-  - Write component tests for product form functionality
-  - _Requirements: 14.5, 14.6, 14.9, 15.6, 15.7, 15.8, 15.9_
+  - Create SKU uniqueness validation with backend API checking and debounce
+  - Add reorder point validation (positive numbers only)
+  - Implement warehouse stock quantity validation (non-negative numbers)
+  - Add image URL validation with preview functionality
+  - Create sale price vs cost price validation (sale >= cost)
+  - Add form auto-save draft functionality for long forms
+  - Implement unsaved changes warning on modal close
+  - _Requirements: 14.7, 14.11, 14.12, 19.2, 19.9_
+
+- [ ] 24.3 Build warehouse stock management section
+
+  - Fetch and display all active warehouses with names and addresses
+  - Create quantity input fields for each warehouse location
+  - Implement default quantity of 0 for all warehouses
+  - Add visual indicators for required vs optional stock setup
+  - Create warehouse stock validation and error handling
+  - Add at least one warehouse stock > 0 warning (not blocking)
+  - _Requirements: 14.6, 14.13, 19.5, 19.6_
+
+- [ ] 24.4 Add form submission and state management
+
+  - Implement form submission for product creation with warehouse stock levels
+  - Add loading states during form submission and SKU validation
+  - Create comprehensive success and error message handling
+  - Add form reset and cancel functionality with confirmation
+  - Create responsive form layout for mobile devices
+  - Write component tests for enhanced product form functionality
+  - _Requirements: 14.9, 14.10, 14.11, 14.12, 19.9, 19.10_
 
 - [ ] 25. Build product edit functionality
 - [ ] 25.1 Create edit mode for product detail modal
@@ -480,11 +505,33 @@
   - Create deep linking support for product details and edit modes
   - _Requirements: All product management requirements need navigation_
 
-- [ ] 28.2 Connect product management to dashboard metrics
+- [ ] 28.2 Connect product management to dashboard metrics with reorder point integration
 
-  - Update summary metrics to reflect product management changes
-  - Ensure stock levels component updates when products are modified
+  - Update summary metrics to reflect product management changes and reorder point calculations
+  - Ensure stock levels component updates when products are modified with new reorder point status
   - Connect warehouse filtering to product management pages
-  - Add real-time updates across dashboard when products change
-  - Write integration tests for product management and dashboard connectivity
-  - _Requirements: 6.1, 6.2, 6.6, 8.2, 8.4_
+  - Add real-time updates across dashboard when products change including stock status recalculation
+  - Update low stock detection throughout dashboard to use reorder point thresholds
+  - Integrate reorder point status into stock visualization charts
+  - Write integration tests for product management and dashboard connectivity with reorder points
+  - _Requirements: 6.1, 6.2, 6.6, 8.2, 8.4, 19.3, 19.4, 19.5, 19.6, 19.7, 19.8_
+
+- [ ] 29. Implement reorder point management across dashboard components
+- [ ] 29.1 Update existing dashboard components for reorder point integration
+
+  - Modify summary metrics component to use reorder point calculations for low stock count
+  - Update stock levels component to display reorder point status and visual indicators
+  - Enhance stock visualization chart to show reorder point thresholds
+  - Add reorder point information to product detail modals
+  - Update warehouse distribution component to show reorder point status by location
+  - _Requirements: 19.3, 19.4, 19.6, 19.7, 19.8_
+
+- [ ] 29.2 Create reorder point management utilities and services
+
+  - Build utility functions for stock status calculation based on reorder points
+  - Create service functions to recalculate stock status when inventory changes
+  - Implement reorder point validation and business logic
+  - Add reorder point update functionality for existing products
+  - Create automated reorder point suggestions based on historical data (future enhancement)
+  - Write unit tests for reorder point management functionality
+  - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5, 19.9, 19.10_
