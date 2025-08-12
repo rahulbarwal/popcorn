@@ -36,7 +36,8 @@
   - Create queries to count low stock products (below reorder point)
   - Implement out of stock detection (zero quantity across all locations)
   - Create supplier count calculation from active suppliers
-  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+  - Implement total stock value calculation using Σ(unit_cost × quantity) formula
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 10.1, 10.2_
 
 - [ ] 4.2 Create summary metrics API endpoint
 
@@ -57,10 +58,11 @@
 - [ ] 5.2 Create stock levels API endpoint
 
   - Build GET /api/dashboard/stock-levels endpoint with filtering and sorting
-  - Implement response formatting to match frontend requirements
+  - Implement warehouse filtering and stock status filtering (All, Low Stock, Out of Stock)
+  - Add response formatting to match frontend requirements with unit costs and values
   - Add error handling and input validation
   - Write unit tests for stock levels service and API endpoint
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 8.2, 8.4, 9.1, 9.2, 9.3, 9.4, 9.5_
 
 - [ ] 6. Build purchase order service and recent purchases API
 - [ ] 6.1 Implement purchase order data retrieval
@@ -127,10 +129,19 @@
   - Write TypeScript interfaces for API responses
   - _Requirements: 5.1, 5.2, 5.4_
 
+- [ ] 9.3 Create global warehouse filter component
+
+  - Build warehouse filter dropdown component with location selection
+  - Implement "All Warehouses" option for aggregated view
+  - Create context provider for warehouse filter state management
+  - Add persistent filter state across page navigation
+  - Write component tests for warehouse filter functionality
+  - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+
 - [ ] 10. Build summary metrics frontend component
 - [ ] 10.1 Create metric cards display component
 
-  - Build responsive metric cards layout with four cards (Total Products, Low Stock, Out of Stock, Suppliers)
+  - Build responsive metric cards layout with five cards (Total Products, Low Stock, Out of Stock, Suppliers, Total Stock Value)
   - Implement real-time data updates with auto-refresh
   - Add visual status indicators (normal, warning, critical) with appropriate colors
   - Create loading states and error handling for metrics data
@@ -157,9 +168,10 @@
 
   - Implement search input for product SKU and name filtering
   - Create category filter dropdown with multi-select capability
+  - Add stock status filter dropdown (All, Low Stock, Out of Stock)
   - Add quantity range filtering controls
   - Write component tests for stock levels functionality
-  - _Requirements: 1.1, 1.2, 5.2_
+  - _Requirements: 1.1, 1.2, 5.2, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
 
 - [ ] 12. Build recent purchases frontend component
 - [ ] 12.1 Create purchase orders list component

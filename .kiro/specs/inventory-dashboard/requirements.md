@@ -87,3 +87,41 @@ The inventory dashboard is a comprehensive web application that provides warehou
 2. WHEN using touch interfaces THEN the system SHALL provide appropriate touch targets and gestures
 3. WHEN viewing on tablets THEN the system SHALL optimize the layout for tablet screen sizes
 4. WHEN using screen readers THEN the system SHALL provide appropriate accessibility features and ARIA labels
+
+### Requirement 8
+
+**User Story:** As a warehouse manager, I want to filter all dashboard data by warehouse location, so that I can focus on inventory and activity for specific locations.
+
+#### Acceptance Criteria
+
+1. WHEN the dashboard loads THEN the system SHALL display a warehouse filter dropdown with all available locations
+2. WHEN a warehouse is selected THEN the system SHALL filter all dashboard components (stock levels, recent purchases, metrics) to show only data for that location
+3. WHEN "All Warehouses" is selected THEN the system SHALL display aggregated data across all locations
+4. WHEN the warehouse filter changes THEN the system SHALL update all dashboard components in real-time
+5. WHEN no data exists for a selected warehouse THEN the system SHALL display appropriate empty state messages
+
+### Requirement 9
+
+**User Story:** As a warehouse operator, I want to filter the stock levels table by stock status, so that I can quickly identify products that need attention.
+
+#### Acceptance Criteria
+
+1. WHEN viewing the stock levels table THEN the system SHALL display a stock filter with options: All, Low Stock, Out of Stock
+2. WHEN "Low Stock" is selected THEN the system SHALL show only products below their reorder point
+3. WHEN "Out of Stock" is selected THEN the system SHALL show only products with zero quantity
+4. WHEN "All" is selected THEN the system SHALL show all products regardless of stock level
+5. WHEN the stock filter changes THEN the system SHALL update the table results immediately
+6. WHEN a stock filter is active THEN the system SHALL display the current filter state clearly
+
+### Requirement 10
+
+**User Story:** As a procurement manager, I want to see the total value of stock across all products, so that I can understand the financial investment in inventory.
+
+#### Acceptance Criteria
+
+1. WHEN the dashboard loads THEN the system SHALL calculate and display the total value of stock using the formula: Σ(unit_cost × quantity)
+2. WHEN displaying the total stock value THEN the system SHALL format the amount as currency with appropriate decimal places
+3. WHEN warehouse filtering is applied THEN the system SHALL recalculate the total value for the selected warehouse only
+4. WHEN stock levels change THEN the system SHALL update the total value calculation in real-time
+5. WHEN unit costs are not available for some products THEN the system SHALL exclude those products from the calculation and display a note
+6. WHEN the total value is displayed THEN the system SHALL show it prominently in the summary metrics section

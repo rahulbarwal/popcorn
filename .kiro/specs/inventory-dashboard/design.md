@@ -28,13 +28,24 @@ graph TB
 
 ### Frontend Components
 
+#### Global Warehouse Filter Component
+
+- **Purpose**: Provide warehouse-scoped filtering for all dashboard data
+- **Features**:
+  - Dropdown selector with all warehouse locations
+  - "All Warehouses" option for aggregated view
+  - Real-time filtering of all dashboard components
+  - Persistent filter state across page navigation
+  - Clear visual indication of active filter
+
 #### Summary Metrics Component
 
 - **Purpose**: Display key inventory statistics in metric cards
 - **Features**:
-  - Four metric cards: Total Products, Low Stock, Out of Stock, Suppliers
-  - Real-time data updates
+  - Five metric cards: Total Products, Low Stock, Out of Stock, Suppliers, Total Stock Value
+  - Real-time data updates with warehouse filtering
   - Visual indicators for critical statuses
+  - Currency formatting for stock value display
   - Responsive card layout
   - Click-through navigation to detailed views
 
@@ -45,6 +56,7 @@ graph TB
   - Product image thumbnails with lazy loading
   - Sortable columns (SKU, Category, Quantity)
   - Search and filter functionality
+  - Stock status filter (All, Low Stock, Out of Stock)
   - Low stock indicators
   - Responsive grid layout
 
@@ -72,10 +84,11 @@ graph TB
 #### Dashboard API Service
 
 - **Endpoints**:
-  - `GET /api/dashboard/summary-metrics` - Key inventory statistics
-  - `GET /api/dashboard/stock-levels` - Aggregated inventory data
-  - `GET /api/dashboard/recent-purchases` - Latest purchase orders
+  - `GET /api/dashboard/summary-metrics?warehouse_id={id}` - Key inventory statistics with optional warehouse filtering
+  - `GET /api/dashboard/stock-levels?warehouse_id={id}&stock_filter={status}` - Aggregated inventory data with filtering
+  - `GET /api/dashboard/recent-purchases?warehouse_id={id}` - Latest purchase orders with optional warehouse filtering
   - `GET /api/dashboard/warehouse-distribution` - Location-based inventory
+  - `GET /api/dashboard/stock-value?warehouse_id={id}` - Total stock value calculation
 
 #### Inventory Service
 
@@ -148,6 +161,7 @@ Based on your requirements, the database schema includes:
 - quantity_on_hand
 - quantity_reserved
 - quantity_available (computed)
+- unit_cost (for stock value calculations)
 - reorder_point
 - last_updated
 ```
@@ -222,7 +236,17 @@ Based on your requirements, the database schema includes:
     "suppliers": {
       "value": 28,
       "status": "normal"
+    },
+    "total_stock_value": {
+      "value": 125000.5,
+      "currency": "USD",
+      "status": "normal",
+      "excluded_products": 5
     }
+  },
+  "warehouse_filter": {
+    "id": 1,
+    "name": "Main Warehouse"
   },
   "last_updated": "2024-12-08T10:30:00Z"
 }
@@ -240,16 +264,29 @@ Based on your requirements, the database schema includes:
       "category": "Electronics",
       "image_url": "/images/product.jpg",
       "total_quantity": 150,
+      "unit_cost": 25.5,
+      "total_value": 3825.0,
       "locations": [
         {
           "location_id": 1,
           "location_name": "Main Warehouse",
-          "quantity": 100
+          "quantity": 100,
+          "unit_cost": 25.5
         }
       ],
-      "low_stock": false
+      "low_stock": false,
+      "out_of_stock": false
     }
-  ]
+  ],
+  "filters": {
+    "warehouse_id": 1,
+    "stock_filter": "all"
+  },
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 1250
+  }
 }
 ```
 
