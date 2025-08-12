@@ -29,8 +29,8 @@
   - Create base repository classes with common CRUD operations
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 4. Build summary metrics service and API
-- [ ] 4.1 Implement summary metrics calculation logic
+- [x] 4. Build summary metrics service and API
+- [x] 4.1 Implement summary metrics calculation logic
 
   - Write service functions to calculate total products count from active products
   - Create queries to count low stock products (below reorder point)
@@ -39,7 +39,7 @@
   - Implement total stock value calculation using Σ(unit_cost × quantity) formula
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 10.1, 10.2_
 
-- [ ] 4.2 Create summary metrics API endpoint
+- [x] 4.2 Create summary metrics API endpoint
 
   - Build GET /api/dashboard/summary-metrics endpoint
   - Implement response formatting with status indicators

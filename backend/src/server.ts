@@ -8,6 +8,7 @@ import {
   checkDatabaseConnection,
   closeDatabaseConnection,
 } from "./config/database";
+import apiRoutes from "./routes";
 
 // Load environment variables
 dotenv.config();
@@ -42,10 +43,8 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// API routes will be added here
-app.use("/api", (req, res) => {
-  res.json({ message: "API endpoints will be implemented here" });
-});
+// API routes
+app.use("/api", apiRoutes);
 
 // Error handling middleware
 app.use(
