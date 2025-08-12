@@ -14,15 +14,15 @@
   - Create database seed files with sample data for development and testing
   - _Requirements: 1.1, 1.2, 2.1, 2.2, 3.1, 3.2, 4.1, 4.2_
 
-- [ ] 3. Create core data models and validation
-- [ ] 3.1 Implement TypeScript interfaces and types
+- [x] 3. Create core data models and validation
+- [x] 3.1 Implement TypeScript interfaces and types
 
   - Define TypeScript interfaces for all database entities (Product, ProductVariant, Location, Company, PurchaseOrder, etc.)
   - Create API request/response type definitions
   - Write validation schemas using a library like Joi or Zod
   - _Requirements: 1.2, 2.2, 4.2_
 
-- [ ] 3.2 Implement database connection and ORM setup
+- [x] 3.2 Implement database connection and ORM setup
 
   - Set up database connection with connection pooling
   - Configure ORM (Sequelize, TypeORM, or Prisma) with model definitions
