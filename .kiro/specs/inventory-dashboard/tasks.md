@@ -47,15 +47,15 @@
   - Write unit tests for summary metrics service and API endpoint
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
 
-- [ ] 5. Build inventory service and stock levels API
-- [ ] 5.1 Implement stock levels aggregation logic
+- [x] 5. Build inventory service and stock levels API
+- [x] 5.1 Implement stock levels aggregation logic
 
   - Write service functions to aggregate product quantities across locations and variants
   - Create database queries with proper joins to fetch product details with inventory levels
   - Implement low stock detection logic based on reorder points
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 5.2 Create stock levels API endpoint
+- [x] 5.2 Create stock levels API endpoint
 
   - Build GET /api/dashboard/stock-levels endpoint with filtering and sorting
   - Implement warehouse filtering and stock status filtering (All, Low Stock, Out of Stock)

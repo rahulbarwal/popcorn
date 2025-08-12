@@ -71,6 +71,25 @@ export class MemoryCache {
   static generateSummaryMetricsKey(warehouseId?: number): string {
     return `summary_metrics_${warehouseId || "all"}`;
   }
+
+  /**
+   * Generate cache key for stock levels
+   */
+  static generateStockLevelsKey(
+    filters: any,
+    pagination?: { page: number; limit: number }
+  ): string {
+    const filterStr = Object.keys(filters)
+      .sort()
+      .map((key) => `${key}:${filters[key]}`)
+      .join("|");
+
+    const paginationStr = pagination
+      ? `page:${pagination.page}|limit:${pagination.limit}`
+      : "";
+
+    return `stock_levels_${filterStr}_${paginationStr}`;
+  }
 }
 
 // Create a singleton instance
