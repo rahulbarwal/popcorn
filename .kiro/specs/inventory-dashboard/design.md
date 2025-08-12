@@ -93,6 +93,45 @@ graph TB
   - Brand-consistent styling and color scheme
   - Empty state handling for filtered views
 
+#### Reorder Suggestions Component
+
+- **Purpose**: Display proactive reorder recommendations based on current stock levels
+- **Features**:
+  - Dashboard section showing products approaching reorder points
+  - Products with stock between 110% and 100% of reorder point
+  - Urgency-based sorting (closest to reorder point first)
+  - Current stock, reorder point, and estimated days until reorder needed
+  - Click-through to purchase order creation modal
+  - Empty state when all products have adequate stock
+  - Warehouse filtering integration
+  - Auto-refresh with configurable intervals
+
+#### Purchase Order Creation Modal Component
+
+- **Purpose**: Guided workflow for creating purchase orders from selected products
+- **Features**:
+  - Multi-step form: Order Details, Products, Review
+  - Supplier selection filtered by product associations
+  - Pre-populated product list from reorder action
+  - Suggested quantity calculation: (reorder_point × 2) - current_stock
+  - Editable quantity and unit price for each product
+  - Order total calculation with tax and shipping
+  - Form validation and error handling
+  - Order summary and confirmation
+  - Integration with existing purchase order system
+
+#### Bulk Reorder Component
+
+- **Purpose**: Enable bulk selection and reordering of multiple products
+- **Features**:
+  - Checkbox selection on stock levels and products tables
+  - Select all/none functionality with count display
+  - Bulk "Reorder Selected" button with selected count
+  - Multi-product purchase order creation
+  - Supplier grouping for products with different suppliers
+  - Bulk quantity suggestions based on individual reorder points
+  - Clear selection and cancel functionality
+
 #### Products Management Component
 
 - **Purpose**: Comprehensive product management interface with CRUD operations
@@ -178,6 +217,26 @@ graph TB
   - `DELETE /api/products/{id}/suppliers/{supplierId}` - Remove supplier from product
   - `GET /api/products/validate-sku/{sku}` - Validate SKU uniqueness
   - `GET /api/warehouses` - Available warehouse locations for stock setup
+
+#### Stock Replenishment Service
+
+- **Endpoints**:
+  - `GET /api/replenishment/suggestions?warehouse_id={id}` - Reorder suggestions based on stock levels
+  - `POST /api/replenishment/purchase-orders` - Create purchase order from selected products
+  - `GET /api/replenishment/suppliers-for-products` - Get suppliers associated with specific products
+  - `POST /api/replenishment/calculate-suggestions` - Calculate suggested quantities for products
+  - `GET /api/replenishment/purchase-order-templates` - Get pre-filled purchase order templates
+
+#### Enhanced Purchase Order Service
+
+- **Endpoints**:
+  - `GET /api/purchase-orders` - Purchase order list with filtering
+  - `GET /api/purchase-orders/{id}` - Detailed purchase order
+  - `POST /api/purchase-orders` - Create new purchase order
+  - `PUT /api/purchase-orders/{id}` - Update purchase order status
+  - `PUT /api/purchase-orders/{id}/receive` - Update received quantities
+  - `GET /api/suppliers` - Supplier information
+  - `GET /api/suppliers/by-products` - Suppliers filtered by product associations
 
 ## Data Models
 
@@ -513,6 +572,236 @@ Based on your requirements, the database schema includes:
   ]
 }
 ```
+
+#### Reorder Suggestions Response
+
+```json
+{
+  "suggestions": [
+    {
+      "product_id": 1,
+      "sku": "ABC-123",
+      "name": "Product Name",
+      "category": "Electronics",
+      "current_stock": 55,
+      "reorder_point": 50,
+      "suggested_quantity": 95,
+      "urgency_score": 0.9,
+      "days_until_reorder": 3,
+      "primary_supplier": {
+        "id": 1,
+        "name": "Supplier Corp",
+        "last_order_date": "2024-11-15"
+      },
+      "stock_trend": "declining",
+      "average_daily_usage": 2.5
+    }
+  ],
+  "total_suggestions": 12,
+  "warehouse_filter": {
+    "id": 1,
+    "name": "Main Warehouse"
+  },
+  "last_updated": "2024-12-08T10:30:00Z"
+}
+```
+
+#### Purchase Order Creation Request
+
+```json
+{
+  "supplier_id": 1,
+  "expected_delivery_date": "2024-12-20",
+  "notes": "Urgent reorder for low stock items",
+  "products": [
+    {
+      "product_id": 1,
+      "quantity": 100,
+      "unit_price": 25.5
+    },
+    {
+      "product_id": 2,
+      "quantity": 50,
+      "unit_price": 15.75
+    }
+  ],
+  "warehouse_id": 1
+}
+```
+
+#### Purchase Order Creation Response
+
+```json
+{
+  "purchase_order": {
+    "id": 123,
+    "po_number": "PO-2024-123",
+    "supplier": {
+      "id": 1,
+      "name": "Supplier Corp",
+      "contact_name": "John Smith",
+      "email": "john@supplier.com"
+    },
+    "order_date": "2024-12-08",
+    "expected_delivery_date": "2024-12-20",
+    "status": "pending",
+    "total_amount": 3337.5,
+    "products": [
+      {
+        "product_id": 1,
+        "sku": "ABC-123",
+        "name": "Product Name",
+        "quantity": 100,
+        "unit_price": 25.5,
+        "total_price": 2550.0
+      },
+      {
+        "product_id": 2,
+        "sku": "DEF-456",
+        "name": "Another Product",
+        "quantity": 50,
+        "unit_price": 15.75,
+        "total_price": 787.5
+      }
+    ],
+    "created_at": "2024-12-08T10:30:00Z"
+  },
+  "message": "Purchase order created successfully"
+}
+```
+
+#### Suppliers for Products Response
+
+```json
+{
+  "suppliers": [
+    {
+      "id": 1,
+      "name": "Supplier Corp",
+      "contact_name": "John Smith",
+      "email": "john@supplier.com",
+      "phone": "+1-555-0123",
+      "products": [1, 2, 5],
+      "last_order_date": "2024-11-15",
+      "average_delivery_days": 7,
+      "reliability_score": 0.95
+    },
+    {
+      "id": 2,
+      "name": "Another Supplier",
+      "contact_name": "Jane Doe",
+      "email": "jane@anothersupplier.com",
+      "phone": "+1-555-0456",
+      "products": [3, 4],
+      "last_order_date": "2024-10-20",
+      "average_delivery_days": 10,
+      "reliability_score": 0.88
+    }
+  ],
+  "product_ids": [1, 2, 3, 4, 5]
+}
+```
+
+## Stock Replenishment Workflow
+
+### Reorder Trigger Points
+
+The system provides multiple entry points for initiating stock replenishment:
+
+1. **Individual Product Reorder**:
+
+   - "Reorder Stock" button on each product row in stock levels table
+   - "Reorder Stock" button on each product row in products management page
+   - Click-through from reorder suggestions component
+
+2. **Bulk Product Reorder**:
+
+   - Checkbox selection on stock levels table
+   - Checkbox selection on products management page
+   - "Reorder Selected" button for multiple products
+
+3. **Proactive Suggestions**:
+   - Reorder suggestions component on dashboard
+   - Automated suggestions based on stock levels and usage trends
+
+### Purchase Order Creation Modal Design
+
+The purchase order creation modal follows a three-step wizard approach:
+
+#### Step 1: Order Details
+
+1. **Supplier Selection**:
+
+   - Dropdown filtered to suppliers associated with selected products
+   - If no supplier association exists, show all available suppliers
+   - Display supplier contact information and reliability metrics
+   - Show last order date and average delivery time
+
+2. **Delivery Information**:
+
+   - Expected delivery date picker with supplier average delivery time pre-filled
+   - Warehouse destination selection (defaults to primary warehouse)
+   - Order priority selection (Normal, Urgent, Critical)
+
+3. **Order Notes**:
+   - Free text field for special instructions
+   - Pre-populated templates for common scenarios (reorder, emergency, etc.)
+
+#### Step 2: Products Review
+
+1. **Product List Display**:
+
+   - Table showing selected products with current stock levels
+   - Reorder point display for context
+   - Suggested quantity calculation: (reorder_point × 2) - current_stock
+   - Editable quantity and unit price fields
+
+2. **Quantity Suggestions**:
+
+   - Smart suggestions based on reorder points and usage trends
+   - Visual indicators for suggested vs. custom quantities
+   - Bulk quantity adjustment options (increase all by %, set minimum order quantities)
+
+3. **Pricing Information**:
+   - Last purchase price display for reference
+   - Unit price editing with validation
+   - Real-time total calculation per product and order total
+
+#### Step 3: Review and Confirmation
+
+1. **Order Summary**:
+
+   - Complete order details with supplier information
+   - Product breakdown with quantities and pricing
+   - Total cost calculation including any applicable taxes or fees
+   - Estimated delivery date and warehouse destination
+
+2. **Validation and Submission**:
+   - Final validation of all required fields
+   - Confirmation of order details
+   - Submit button with loading state during creation
+   - Success confirmation with order number
+
+### Bulk Reorder Handling
+
+When multiple products are selected for reordering:
+
+1. **Supplier Grouping**:
+
+   - Automatically group products by their primary suppliers
+   - Create separate purchase orders for each supplier
+   - Display supplier grouping in the modal for user confirmation
+
+2. **Mixed Supplier Scenarios**:
+
+   - Allow user to reassign products to different suppliers if needed
+   - Show warning when products don't have associated suppliers
+   - Provide option to split orders or assign all to one supplier
+
+3. **Quantity Management**:
+   - Apply bulk quantity adjustments across all selected products
+   - Maintain individual product suggestions while allowing bulk modifications
+   - Validate minimum order quantities per supplier
 
 ## Product Creation Workflow
 

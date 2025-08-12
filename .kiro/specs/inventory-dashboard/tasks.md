@@ -535,3 +535,191 @@
   - Create automated reorder point suggestions based on historical data (future enhancement)
   - Write unit tests for reorder point management functionality
   - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5, 19.9, 19.10_
+
+- [ ] 30. Build stock replenishment service and API endpoints
+- [ ] 30.1 Implement reorder suggestions calculation logic
+
+  - Write service functions to identify products approaching reorder points (110%-100% of reorder point)
+  - Create queries to calculate suggested quantities using (reorder_point × 2) - current_stock formula
+  - Implement urgency scoring based on proximity to reorder point and usage trends
+  - Add days-until-reorder calculation based on average daily usage patterns
+  - Create stock trend analysis (declining, stable, increasing) for better suggestions
+  - _Requirements: 23.2, 23.3, 23.4_
+
+- [ ] 30.2 Create reorder suggestions API endpoint
+
+  - Build GET /api/replenishment/suggestions endpoint with warehouse filtering
+  - Implement response formatting with urgency scoring and trend analysis
+  - Add caching for improved performance on frequently accessed suggestions
+  - Create supplier association lookup for suggested products
+  - Write unit tests for reorder suggestions service and API endpoint
+  - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5, 23.7_
+
+- [ ] 30.3 Implement purchase order creation service for replenishment
+
+  - Write service functions to create purchase orders from selected products
+  - Create supplier filtering logic for products with multiple supplier associations
+  - Implement quantity validation and suggested quantity calculations
+  - Add purchase order number generation and order total calculations
+  - Create database transaction handling for purchase order creation with product associations
+  - _Requirements: 21.1, 21.2, 21.6, 21.7, 21.8, 21.9, 21.10_
+
+- [ ] 30.4 Create purchase order creation API endpoint
+
+  - Build POST /api/replenishment/purchase-orders endpoint for order creation
+  - Implement GET /api/replenishment/suppliers-for-products endpoint for supplier filtering
+  - Create POST /api/replenishment/calculate-suggestions endpoint for quantity calculations
+  - Add comprehensive validation for purchase order data and product associations
+  - Write unit tests for purchase order creation service and API endpoints
+  - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5, 21.6, 21.7, 21.8, 21.9, 21.10_
+
+- [ ] 31. Build reorder suggestions frontend component
+- [ ] 31.1 Create reorder suggestions display component
+
+  - Build dashboard section component showing products approaching reorder points
+  - Implement urgency-based sorting with visual indicators for priority levels
+  - Add product information display with current stock, reorder point, and suggested quantities
+  - Create days-until-reorder display with trend indicators
+  - Add click-through functionality to purchase order creation modal
+  - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5_
+
+- [ ] 31.2 Add reorder suggestions interactivity and filtering
+
+  - Connect reorder suggestions to global warehouse filter for location-specific suggestions
+  - Implement auto-refresh functionality with configurable intervals
+  - Create empty state display when all products have adequate stock
+  - Add loading states and error handling for suggestions data
+  - Write component tests for reorder suggestions functionality
+  - _Requirements: 23.6, 23.7_
+
+- [ ] 32. Build purchase order creation modal component
+- [ ] 32.1 Create multi-step purchase order form
+
+  - Build modal component with three-step wizard: Order Details, Products, Review
+  - Implement Order Details step with supplier selection, delivery date, and notes
+  - Create supplier dropdown filtered by product associations with fallback to all suppliers
+  - Add delivery date picker with supplier average delivery time pre-population
+  - Create order notes field with pre-populated templates for common scenarios
+  - _Requirements: 21.1, 21.2, 21.3, 21.4_
+
+- [ ] 32.2 Implement products review step
+
+  - Create products table showing selected products with current stock and reorder points
+  - Implement suggested quantity display with calculation: (reorder_point × 2) - current_stock
+  - Add editable quantity and unit price fields with real-time validation
+  - Create bulk quantity adjustment controls for multiple products
+  - Add last purchase price display for pricing reference
+  - _Requirements: 21.5, 21.6, 21.7_
+
+- [ ] 32.3 Build review and confirmation step
+
+  - Create order summary display with complete supplier and product information
+  - Implement total cost calculation with real-time updates
+  - Add final validation and error handling before submission
+  - Create order confirmation display with generated purchase order number
+  - Add loading states during order creation and success/error message handling
+  - _Requirements: 21.8, 21.9, 21.10_
+
+- [ ] 32.4 Add modal navigation and state management
+
+  - Implement step navigation with progress indicators and validation
+  - Create form state management across all three steps
+  - Add unsaved changes warning when closing modal
+  - Implement responsive modal design for mobile and tablet devices
+  - Write component tests for purchase order creation modal functionality
+  - _Requirements: 21.1, 21.8, 21.9, 21.10_
+
+- [ ] 33. Add reorder stock buttons to existing components
+- [ ] 33.1 Enhance stock levels table with reorder functionality
+
+  - Add "Reorder Stock" button to each product row in stock levels table
+  - Implement visual indicators for reorder buttons when products are below reorder point
+  - Add urgent styling for reorder buttons when products are out of stock
+  - Create click handler to open purchase order creation modal with pre-selected product
+  - Add bulk selection checkboxes for multiple product reordering
+  - _Requirements: 20.1, 20.4, 20.7, 20.8_
+
+- [ ] 33.2 Add bulk reorder functionality to stock levels table
+
+  - Implement "Select All" and "Select None" functionality with selection count display
+  - Create "Reorder Selected" button that appears when products are selected
+  - Add bulk reorder click handler to open purchase order modal with multiple products
+  - Create selection state management and clear selection functionality
+  - Write component tests for bulk reorder functionality
+  - _Requirements: 20.4, 20.5, 20.6_
+
+- [ ] 33.3 Enhance products management page with reorder functionality
+
+  - Add "Reorder Stock" button to each product row in products table
+  - Implement same visual indicators and styling as stock levels table
+  - Add bulk selection checkboxes and "Reorder Selected" button to products page
+  - Create consistent reorder functionality across both stock levels and products pages
+  - Write component tests for products page reorder functionality
+  - _Requirements: 20.2, 20.4, 20.5, 20.6, 20.7, 20.8_
+
+- [ ] 34. Implement purchase order status tracking and notifications
+- [ ] 34.1 Enhance purchase order status management
+
+  - Update purchase order service to handle status changes (Pending, Confirmed, Shipped, Delivered)
+  - Implement automatic status updates when products are received
+  - Create overdue order detection based on expected delivery dates
+  - Add real-time status updates across dashboard components
+  - Create purchase order receiving functionality for updating quantities received
+  - _Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6_
+
+- [ ] 34.2 Update recent purchases component for replenishment orders
+
+  - Modify recent purchases component to display purchase orders created through reorder workflow
+  - Add visual indicators for overdue orders with highlighting
+  - Implement real-time status updates for purchase order changes
+  - Create order detail expansion showing products and quantities
+  - Add receiving functionality integration for updating delivered quantities
+  - _Requirements: 22.2, 22.3, 22.4, 22.5, 22.6_
+
+- [ ] 34.3 Implement inventory level updates from received orders
+
+  - Create service functions to update inventory levels when orders are received
+  - Implement automatic stock status recalculation after inventory updates
+  - Add real-time dashboard updates when inventory levels change
+  - Create audit trail for inventory changes from purchase order receipts
+  - Write unit tests for inventory update functionality
+  - _Requirements: 22.6, 22.7_
+
+- [ ] 35. Integrate stock replenishment with existing dashboard
+- [ ] 35.1 Update dashboard navigation and routing
+
+  - Add navigation elements for stock replenishment features
+  - Create deep linking support for reorder suggestions and purchase order creation
+  - Implement breadcrumb navigation for replenishment workflows
+  - Add keyboard shortcuts for common reorder actions
+  - _Requirements: All stock replenishment requirements need navigation_
+
+- [ ] 35.2 Connect replenishment functionality to dashboard metrics
+
+  - Update summary metrics to reflect purchase order activity and pending replenishments
+  - Ensure reorder suggestions component updates when inventory levels change
+  - Connect warehouse filtering to all replenishment components
+  - Add real-time updates across dashboard when purchase orders are created or updated
+  - Create integration between reorder suggestions and stock visualization components
+  - Write integration tests for replenishment and dashboard connectivity
+  - _Requirements: 20.1, 20.2, 21.10, 22.7, 23.1, 23.7_
+
+- [ ] 36. Add comprehensive testing for stock replenishment functionality
+- [ ] 36.1 Create backend integration tests for replenishment
+
+  - Write API endpoint integration tests for reorder suggestions and purchase order creation
+  - Create database transaction tests for purchase order creation with product associations
+  - Implement load testing for concurrent reorder operations
+  - Add supplier filtering and quantity calculation performance tests
+  - Create error handling tests for failed purchase order creation scenarios
+  - _Requirements: All stock replenishment requirements need testing coverage_
+
+- [ ] 36.2 Create frontend component tests for replenishment
+
+  - Write unit tests for reorder suggestions component with mock data
+  - Create integration tests for purchase order creation modal workflow
+  - Add tests for bulk reorder functionality and selection state management
+  - Implement end-to-end tests for complete reorder workflow from suggestion to order creation
+  - Create accessibility tests for all replenishment components
+  - Write visual regression tests for reorder buttons and modal interfaces
+  - _Requirements: All stock replenishment requirements need testing coverage_

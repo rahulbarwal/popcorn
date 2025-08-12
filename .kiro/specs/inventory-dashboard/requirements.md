@@ -272,3 +272,63 @@ The inventory dashboard is a comprehensive web application that provides warehou
 8. WHEN filtering by stock status THEN the system SHALL use reorder point calculations to determine "Low Stock" classification
 9. WHEN reorder points are updated THEN the system SHALL recalculate stock status across all affected displays
 10. WHEN no reorder point is set THEN the system SHALL treat the product as having adequate stock unless quantity is zero
+
+### Requirement 20
+
+**User Story:** As a procurement manager, I want to initiate stock replenishment for selected products, so that I can quickly create purchase orders when inventory levels are low.
+
+#### Acceptance Criteria
+
+1. WHEN viewing the stock levels table THEN the system SHALL display a "Reorder Stock" button for each product row
+2. WHEN viewing the products page THEN the system SHALL display a "Reorder Stock" button for each product in the table
+3. WHEN clicking "Reorder Stock" for a single product THEN the system SHALL open a purchase order creation modal pre-populated with that product
+4. WHEN the stock levels table is displayed THEN the system SHALL provide bulk selection checkboxes for multiple products
+5. WHEN multiple products are selected THEN the system SHALL display a bulk "Reorder Selected" button
+6. WHEN clicking "Reorder Selected" THEN the system SHALL open a purchase order creation modal with all selected products
+7. WHEN products are below their reorder point THEN the system SHALL highlight the "Reorder Stock" button with visual indicators
+8. WHEN products are out of stock THEN the system SHALL mark the "Reorder Stock" button as urgent with distinct styling
+
+### Requirement 21
+
+**User Story:** As a procurement manager, I want to create purchase orders through a guided workflow, so that I can efficiently replenish stock with accurate supplier and quantity information.
+
+#### Acceptance Criteria
+
+1. WHEN the purchase order creation modal opens THEN the system SHALL display a form with sections: Order Details, Products, and Review
+2. WHEN in the Order Details section THEN the system SHALL require selection of supplier, expected delivery date, and order notes
+3. WHEN selecting a supplier THEN the system SHALL filter to show only suppliers associated with the selected products
+4. WHEN no supplier is associated with a product THEN the system SHALL allow selection from all available suppliers
+5. WHEN in the Products section THEN the system SHALL display each selected product with current stock, reorder point, and suggested quantity
+6. WHEN displaying suggested quantity THEN the system SHALL calculate as (reorder_point × 2) - current_stock, with minimum of 1
+7. WHEN in the Products section THEN the system SHALL allow editing of quantity and unit price for each product
+8. WHEN in the Review section THEN the system SHALL display order summary with total cost calculation
+9. WHEN submitting the purchase order THEN the system SHALL validate all required fields and create the order
+10. WHEN the purchase order is created successfully THEN the system SHALL close the modal and refresh the dashboard data
+
+### Requirement 22
+
+**User Story:** As a procurement manager, I want to track purchase order status and receive notifications, so that I can monitor replenishment progress and take action when needed.
+
+#### Acceptance Criteria
+
+1. WHEN a purchase order is created THEN the system SHALL set initial status to "Pending" and send confirmation notification
+2. WHEN viewing recent purchases THEN the system SHALL display purchase orders created through the reorder workflow
+3. WHEN a purchase order status changes THEN the system SHALL update the dashboard in real-time
+4. WHEN a purchase order is overdue THEN the system SHALL highlight it with visual indicators in the recent purchases section
+5. WHEN products from a purchase order are received THEN the system SHALL allow updating quantities received
+6. WHEN all products in a purchase order are fully received THEN the system SHALL automatically update the order status to "Delivered"
+7. WHEN inventory levels are updated from received orders THEN the system SHALL recalculate stock status across all dashboard components
+
+### Requirement 23
+
+**User Story:** As a warehouse manager, I want to see reorder suggestions based on current stock levels, so that I can proactively manage inventory before stockouts occur.
+
+#### Acceptance Criteria
+
+1. WHEN the dashboard loads THEN the system SHALL display a "Reorder Suggestions" section showing products approaching their reorder points
+2. WHEN displaying reorder suggestions THEN the system SHALL show products with stock levels between 110% and 100% of their reorder point
+3. WHEN displaying reorder suggestions THEN the system SHALL sort products by urgency (closest to reorder point first)
+4. WHEN displaying reorder suggestions THEN the system SHALL show current stock, reorder point, and days until reorder point based on usage trends
+5. WHEN a product in reorder suggestions is clicked THEN the system SHALL open the purchase order creation modal for that product
+6. WHEN the reorder suggestions section is empty THEN the system SHALL display a message indicating all products have adequate stock
+7. WHEN warehouse filtering is applied THEN the system SHALL update reorder suggestions to show only products relevant to the selected warehouse
