@@ -28,6 +28,16 @@ graph TB
 
 ### Frontend Components
 
+#### Summary Metrics Component
+
+- **Purpose**: Display key inventory statistics in metric cards
+- **Features**:
+  - Four metric cards: Total Products, Low Stock, Out of Stock, Suppliers
+  - Real-time data updates
+  - Visual indicators for critical statuses
+  - Responsive card layout
+  - Click-through navigation to detailed views
+
 #### Stock Levels Component
 
 - **Purpose**: Display current inventory levels with product details
@@ -62,6 +72,7 @@ graph TB
 #### Dashboard API Service
 
 - **Endpoints**:
+  - `GET /api/dashboard/summary-metrics` - Key inventory statistics
   - `GET /api/dashboard/stock-levels` - Aggregated inventory data
   - `GET /api/dashboard/recent-purchases` - Latest purchase orders
   - `GET /api/dashboard/warehouse-distribution` - Location-based inventory
@@ -189,6 +200,33 @@ Based on your requirements, the database schema includes:
 ```
 
 ### API Response Models
+
+#### Summary Metrics Response
+
+```json
+{
+  "metrics": {
+    "total_products": {
+      "value": 1250,
+      "status": "normal"
+    },
+    "low_stock": {
+      "value": 45,
+      "status": "warning",
+      "threshold": 50
+    },
+    "out_of_stock": {
+      "value": 12,
+      "status": "critical"
+    },
+    "suppliers": {
+      "value": 28,
+      "status": "normal"
+    }
+  },
+  "last_updated": "2024-12-08T10:30:00Z"
+}
+```
 
 #### Stock Level Response
 

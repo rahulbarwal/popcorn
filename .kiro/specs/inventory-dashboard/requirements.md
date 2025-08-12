@@ -65,6 +65,20 @@ The inventory dashboard is a comprehensive web application that provides warehou
 
 ### Requirement 6
 
+**User Story:** As a warehouse manager, I want to see key inventory statistics at a glance, so that I can quickly assess overall inventory health and make informed decisions.
+
+#### Acceptance Criteria
+
+1. WHEN the dashboard loads THEN the system SHALL display summary metric cards showing Total Products, Low Stock, Out of Stock, and Suppliers
+2. WHEN displaying Total Products THEN the system SHALL show the count of all active products in the inventory
+3. WHEN displaying Low Stock THEN the system SHALL show the count of products below their reorder point
+4. WHEN displaying Out of Stock THEN the system SHALL show the count of products with zero quantity across all locations
+5. WHEN displaying Suppliers THEN the system SHALL show the count of active suppliers in the system
+6. WHEN metric values change THEN the system SHALL update the cards in real-time
+7. IF any metric indicates a critical status THEN the system SHALL highlight it with appropriate visual indicators
+
+### Requirement 7
+
 **User Story:** As a warehouse team member, I want the dashboard to be responsive and accessible on different devices, so that I can check inventory status from tablets or mobile devices in the warehouse.
 
 #### Acceptance Criteria
