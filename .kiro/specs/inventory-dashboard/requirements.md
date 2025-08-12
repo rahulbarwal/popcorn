@@ -125,3 +125,20 @@ The inventory dashboard is a comprehensive web application that provides warehou
 4. WHEN stock levels change THEN the system SHALL update the total value calculation in real-time
 5. WHEN unit costs are not available for some products THEN the system SHALL exclude those products from the calculation and display a note
 6. WHEN the total value is displayed THEN the system SHALL show it prominently in the summary metrics section
+
+### Requirement 11
+
+**User Story:** As a warehouse manager, I want to visualize inventory distribution across products and warehouses using a bar chart, so that I can quickly identify stock patterns and make informed distribution decisions.
+
+#### Acceptance Criteria
+
+1. WHEN the dashboard loads THEN the system SHALL display a bar/column chart titled "Stock by Product per Warehouse"
+2. WHEN displaying the chart THEN the system SHALL show product names on the x-axis and stock quantities on the y-axis
+3. WHEN multiple warehouses contain the same product THEN the system SHALL display grouped bars for each warehouse location
+4. WHEN the warehouse filter is applied THEN the system SHALL update the chart to show only data for the selected warehouse
+5. WHEN "All Warehouses" is selected THEN the system SHALL display grouped bars showing all warehouse locations for comparison
+6. WHEN hovering over chart bars THEN the system SHALL display tooltips with exact quantities, product names, and warehouse information
+7. WHEN the chart data updates THEN the system SHALL animate transitions smoothly to reflect changes
+8. WHEN no data exists for the current filter THEN the system SHALL display an appropriate empty state message
+9. WHEN displaying the chart THEN the system SHALL follow brand styling guidelines for colors, fonts, and visual elements
+10. WHEN the chart loads THEN the system SHALL be responsive and adapt to different screen sizes while maintaining readability

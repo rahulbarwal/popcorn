@@ -268,8 +268,46 @@
   - _Requirements: All requirements need testing coverage_
 
 - [ ] 17.2 Create frontend component tests
+
   - Write unit tests for all React components using Jest and React Testing Library
   - Create end-to-end tests for complete user workflows
   - Add cross-browser compatibility testing
   - Implement visual regression testing for UI components
   - _Requirements: All requirements need testing coverage_
+
+- [ ] 18. Build stock visualization service and API
+- [ ] 18.1 Implement chart data aggregation logic
+
+  - Write service functions to aggregate stock data by product and warehouse for chart display
+  - Create queries to fetch product names, SKUs, and quantities grouped by warehouse
+  - Implement data transformation for chart-ready format with proper grouping
+  - Add color assignment logic for consistent warehouse representation
+  - _Requirements: 11.1, 11.2, 11.3, 11.5_
+
+- [ ] 18.2 Create stock visualization API endpoint
+
+  - Build GET /api/dashboard/stock-visualization endpoint with warehouse filtering
+  - Implement response formatting optimized for chart rendering libraries
+  - Add chart configuration data including titles, labels, and color palettes
+  - Add caching for improved chart loading performance
+  - Write unit tests for visualization service and API endpoint
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.8_
+
+- [ ] 19. Build stock visualization frontend component
+- [ ] 19.1 Create bar/column chart component
+
+  - Implement bar/column chart using a charting library (Chart.js, Recharts, or D3)
+  - Create chart component with "Stock by Product per Warehouse" title
+  - Implement grouped bar display for multi-warehouse comparison
+  - Add responsive chart sizing and layout for different screen sizes
+  - _Requirements: 11.1, 11.2, 11.3, 11.10_
+
+- [ ] 19.2 Add chart interactivity and filtering integration
+
+  - Implement interactive tooltips showing exact quantities, product names, and warehouse information
+  - Connect chart to global warehouse filter for real-time data updates
+  - Add smooth animations for data transitions when filters change
+  - Implement empty state display when no data matches current filters
+  - Apply brand styling guidelines for colors, fonts, and visual elements
+  - Write component tests for stock visualization functionality
+  - _Requirements: 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10_

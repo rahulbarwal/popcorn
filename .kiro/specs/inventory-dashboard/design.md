@@ -79,6 +79,20 @@ graph TB
   - Transfer suggestions
   - Interactive warehouse map (future enhancement)
 
+#### Stock Visualization Component
+
+- **Purpose**: Provide visual representation of inventory distribution using bar/column charts
+- **Features**:
+  - Bar/column chart titled "Stock by Product per Warehouse"
+  - Product names on x-axis, stock quantities on y-axis
+  - Grouped bars for multi-warehouse comparison
+  - Real-time updates with warehouse filter changes
+  - Interactive tooltips with detailed information
+  - Smooth animations for data transitions
+  - Responsive design for all screen sizes
+  - Brand-consistent styling and color scheme
+  - Empty state handling for filtered views
+
 ### Backend Services
 
 #### Dashboard API Service
@@ -89,6 +103,7 @@ graph TB
   - `GET /api/dashboard/recent-purchases?warehouse_id={id}` - Latest purchase orders with optional warehouse filtering
   - `GET /api/dashboard/warehouse-distribution` - Location-based inventory
   - `GET /api/dashboard/stock-value?warehouse_id={id}` - Total stock value calculation
+  - `GET /api/dashboard/stock-visualization?warehouse_id={id}` - Chart data for stock visualization by product and warehouse
 
 #### Inventory Service
 
@@ -308,6 +323,47 @@ Based on your requirements, the database schema includes:
       "total_amount": 1500.0
     }
   ]
+}
+```
+
+#### Stock Visualization Response
+
+```json
+{
+  "chart_data": {
+    "products": [
+      {
+        "product_id": 1,
+        "product_name": "Product A",
+        "sku": "ABC-123",
+        "warehouses": [
+          {
+            "warehouse_id": 1,
+            "warehouse_name": "Main Warehouse",
+            "quantity": 150,
+            "color": "#3B82F6"
+          },
+          {
+            "warehouse_id": 2,
+            "warehouse_name": "Secondary Warehouse",
+            "quantity": 75,
+            "color": "#10B981"
+          }
+        ]
+      }
+    ],
+    "chart_config": {
+      "title": "Stock by Product per Warehouse",
+      "x_axis_label": "Products",
+      "y_axis_label": "Stock Quantity",
+      "color_palette": ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"]
+    }
+  },
+  "filters": {
+    "warehouse_id": null,
+    "warehouse_name": "All Warehouses"
+  },
+  "last_updated": "2024-12-08T10:30:00Z"
 }
 ```
 
