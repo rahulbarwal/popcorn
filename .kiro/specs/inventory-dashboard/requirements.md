@@ -332,3 +332,52 @@ The inventory dashboard is a comprehensive web application that provides warehou
 5. WHEN a product in reorder suggestions is clicked THEN the system SHALL open the purchase order creation modal for that product
 6. WHEN the reorder suggestions section is empty THEN the system SHALL display a message indicating all products have adequate stock
 7. WHEN warehouse filtering is applied THEN the system SHALL update reorder suggestions to show only products relevant to the selected warehouse
+
+### Requirement 24
+
+**User Story:** As a warehouse manager, I want to filter products by stock status using a dropdown filter, so that I can quickly identify products that need attention based on their inventory levels.
+
+#### Acceptance Criteria
+
+1. WHEN viewing the stock levels table THEN the system SHALL display a stock filter dropdown with options: "All products", "Low stock", "Out of stock"
+2. WHEN "All products" is selected THEN the system SHALL display all products regardless of stock level
+3. WHEN "Low stock" is selected THEN the system SHALL show only products below their reorder point threshold
+4. WHEN "Out of stock" is selected THEN the system SHALL show only products with zero quantity across all locations
+5. WHEN the stock filter selection changes THEN the system SHALL update the table results immediately without page refresh
+6. WHEN a stock filter is active THEN the system SHALL display the current filter state clearly in the UI
+7. WHEN the stock filter is combined with other filters THEN the system SHALL apply all filters simultaneously
+8. WHEN the stock filter is applied THEN the system SHALL maintain the filter state during page navigation
+
+### Requirement 25
+
+**User Story:** As a warehouse manager, I want to edit product information directly in the table rows, so that I can quickly update Sale Price, Cost Price, Category, and Reorder Point without opening separate forms.
+
+#### Acceptance Criteria
+
+1. WHEN viewing the products table THEN the system SHALL display Sale Price, Cost Price, Category, and Reorder Point as editable fields in each row
+2. WHEN clicking on an editable field THEN the system SHALL convert the field to an input control (text input for prices/reorder point, dropdown for category)
+3. WHEN a field is in edit mode THEN the system SHALL display Save and Discard buttons for that specific row
+4. WHEN clicking Save THEN the system SHALL validate the input, write changes to the database, and update the view instantly
+5. WHEN clicking Discard THEN the system SHALL revert the field to its original value without saving changes
+6. WHEN validation fails THEN the system SHALL display field-specific error messages and prevent saving
+7. WHEN multiple fields in a row are edited THEN the system SHALL save all changes atomically when Save is clicked
+8. WHEN editing is in progress THEN the system SHALL prevent navigation away from the page without confirmation
+9. WHEN a save operation completes successfully THEN the system SHALL show a brief success indicator and return the row to view mode
+10. WHEN a save operation fails THEN the system SHALL display an error message and keep the row in edit mode for correction
+
+### Requirement 26
+
+**User Story:** As a warehouse manager, I want inline edits to write changes immediately to the database and update all related views, so that I can see the impact of my changes across the entire dashboard in real-time.
+
+#### Acceptance Criteria
+
+1. WHEN an inline edit is saved successfully THEN the system SHALL write the changes to the database immediately
+2. WHEN database changes are committed THEN the system SHALL update the current table view to reflect the new values
+3. WHEN product pricing is updated THEN the system SHALL recalculate and update the total stock value in summary metrics
+4. WHEN reorder point is changed THEN the system SHALL recalculate stock status (low stock/adequate) and update all affected dashboard components
+5. WHEN category is changed THEN the system SHALL update category filters and any category-based groupings throughout the dashboard
+6. WHEN changes affect stock status THEN the system SHALL update the stock visualization chart in real-time
+7. WHEN changes are made THEN the system SHALL update the recent activity or audit log to track modifications
+8. WHEN multiple users are viewing the same data THEN the system SHALL broadcast changes to update other users' views in real-time
+9. WHEN network connectivity is lost during save THEN the system SHALL queue changes and retry when connection is restored
+10. WHEN concurrent edits occur THEN the system SHALL handle conflicts gracefully with appropriate user notifications

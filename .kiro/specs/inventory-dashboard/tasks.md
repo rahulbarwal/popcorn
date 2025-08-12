@@ -605,7 +605,160 @@
 - [ ] 32.2 Implement products review step
 
   - Create products table showing selected products with current stock and reorder points
-  - Implement suggested quantity display with calculation: (reorder_point × 2) - current_stock
+  - Implement suggested quantity display with editable quantity and unit price fields
+  - Add real-time total cost calculation for order summary
+  - Create bulk quantity adjustment controls for multiple products
+  - Add validation for minimum order quantities and pricing
+  - _Requirements: 21.5, 21.6, 21.7_
+
+- [ ] 32.3 Build review and confirmation step
+
+  - Create order summary display with complete supplier and product information
+  - Implement total cost calculation including taxes and fees
+  - Add final validation before order submission
+  - Create order confirmation with success message and order number
+  - Add loading states during order creation process
+  - Write component tests for purchase order creation modal
+  - _Requirements: 21.8, 21.9, 21.10_
+
+- [ ] 33. Build enhanced stock filter functionality
+- [ ] 33.1 Implement enhanced stock filtering service
+
+  - Extend existing stock levels service to support new filter options: "All products", "Low stock", "Out of stock"
+  - Create filter count calculation for each stock status category
+  - Implement filter state management and persistence
+  - Add filter combination logic with existing warehouse and search filters
+  - Create optimized database queries for stock status filtering
+  - _Requirements: 24.1, 24.2, 24.3, 24.4, 24.7_
+
+- [ ] 33.2 Create enhanced stock filter API endpoints
+
+  - Extend GET /api/dashboard/stock-levels endpoint with new stock_filter parameter
+  - Add GET /api/dashboard/filter-options endpoint for filter counts and options
+  - Implement response formatting with filter state and counts
+  - Add caching for improved filter performance
+  - Write unit tests for enhanced stock filtering functionality
+  - _Requirements: 24.1, 24.2, 24.3, 24.4, 24.5, 24.6, 24.8_
+
+- [ ] 33.3 Build enhanced stock filter frontend component
+
+  - Create dropdown component with "All products", "Low stock", "Out of stock" options
+  - Implement real-time filtering without page refresh
+  - Add visual indicators for active filter state
+  - Connect filter to existing table and dashboard components
+  - Add filter count display for each option
+  - Create filter state persistence across navigation
+  - Write component tests for enhanced stock filter functionality
+  - _Requirements: 24.1, 24.2, 24.3, 24.4, 24.5, 24.6, 24.7, 24.8_
+
+- [ ] 34. Build inline editing system
+- [ ] 34.1 Implement inline edit backend service
+
+  - Create service functions for atomic field updates (sale_price, cost_price, category, reorder_point)
+  - Implement field validation logic with business rules (sale_price >= cost_price, positive reorder_point)
+  - Add bulk field update functionality for multiple fields per product
+  - Create audit logging for all inline edit operations
+  - Implement optimistic locking for concurrent edit conflict resolution
+  - _Requirements: 25.2, 25.4, 25.6, 25.7, 26.1, 26.7_
+
+- [ ] 34.2 Create inline edit API endpoints
+
+  - Build PATCH /api/products/{id}/inline endpoint for single field updates
+  - Create PUT /api/products/{id}/fields endpoint for bulk field updates
+  - Implement POST /api/products/validate-inline endpoint for real-time validation
+  - Add comprehensive error handling and validation responses
+  - Create audit trail endpoints for tracking changes
+  - Write unit tests for inline edit API functionality
+  - _Requirements: 25.4, 25.6, 25.7, 25.9, 26.1, 26.7_
+
+- [ ] 34.3 Build inline edit frontend components
+
+  - Create editable field components for sale_price, cost_price, category, reorder_point
+  - Implement click-to-edit interaction with visual feedback
+  - Build per-row Save/Discard button system
+  - Add real-time validation with field-specific error messages
+  - Create loading states during save operations
+  - Implement keyboard navigation (Tab, Enter, Escape)
+  - _Requirements: 25.1, 25.2, 25.3, 25.4, 25.5, 25.6_
+
+- [ ] 34.4 Add inline edit user experience features
+
+  - Implement optimistic UI updates with rollback on failure
+  - Create unsaved changes warning system
+  - Add success indicators for completed saves
+  - Build error handling with retry mechanisms
+  - Create touch-friendly controls for mobile devices
+  - Write component tests for inline edit functionality
+  - _Requirements: 25.8, 25.9, 25.10_
+
+- [ ] 35. Build real-time synchronization system
+- [ ] 35.1 Implement real-time update backend infrastructure
+
+  - Set up WebSocket or Server-Sent Events for real-time communication
+  - Create change broadcasting service for multi-user updates
+  - Implement dashboard metrics recalculation triggers
+  - Add cross-component synchronization logic
+  - Create offline change queuing with retry mechanisms
+  - _Requirements: 26.2, 26.3, 26.4, 26.5, 26.6, 26.8, 26.9_
+
+- [ ] 35.2 Create real-time synchronization API endpoints
+
+  - Build GET /api/realtime/subscribe WebSocket endpoint
+  - Create POST /api/realtime/broadcast endpoint for change notifications
+  - Implement GET /api/dashboard/metrics/live endpoint for live metrics
+  - Add change notification formatting and routing
+  - Write integration tests for real-time functionality
+  - _Requirements: 26.2, 26.3, 26.4, 26.5, 26.6, 26.8_
+
+- [ ] 35.3 Build real-time frontend synchronization
+
+  - Implement WebSocket client for receiving real-time updates
+  - Create change notification handling for dashboard components
+  - Add automatic metric recalculation when related data changes
+  - Implement cross-component data synchronization
+  - Create conflict resolution UI for concurrent edits
+  - Add network connectivity monitoring and reconnection logic
+  - Write integration tests for real-time frontend functionality
+  - _Requirements: 26.2, 26.3, 26.4, 26.5, 26.6, 26.8, 26.9, 26.10_
+
+- [ ] 36. Integrate new features with existing dashboard
+- [ ] 36.1 Connect enhanced stock filters to existing components
+
+  - Update stock levels component to use enhanced filtering
+  - Connect stock visualization chart to new filter options
+  - Integrate enhanced filters with warehouse filtering
+  - Update summary metrics to reflect filtered counts
+  - Add filter state synchronization across components
+  - _Requirements: 24.7, 24.8_
+
+- [ ] 36.2 Integrate inline editing with dashboard metrics
+
+  - Connect inline edits to summary metrics recalculation
+  - Update stock visualization when pricing or categories change
+  - Integrate reorder point changes with stock status calculations
+  - Add real-time updates to all affected dashboard components
+  - Create comprehensive integration testing for all features
+  - _Requirements: 26.2, 26.3, 26.4, 26.5, 26.6_
+
+- [ ] 37. Add comprehensive testing and validation
+- [ ] 37.1 Create backend tests for new features
+
+  - Write unit tests for enhanced stock filtering service
+  - Create integration tests for inline edit API endpoints
+  - Add performance tests for real-time synchronization
+  - Implement validation tests for all new business rules
+  - Create load tests for concurrent inline editing scenarios
+  - _Requirements: All new requirements need comprehensive testing_
+
+- [ ] 37.2 Create frontend tests for new features
+
+  - Write component tests for enhanced stock filter dropdown
+  - Create integration tests for inline editing workflows
+  - Add end-to-end tests for complete stock filtering and editing scenarios
+  - Implement accessibility tests for new interactive components
+  - Create cross-browser compatibility tests for inline editing
+  - Write performance tests for real-time update handling
+  - \_Requirements: All new requirements need comprehensive testing_ith calculation: (reorder_point × 2) - current_stock
   - Add editable quantity and unit price fields with real-time validation
   - Create bulk quantity adjustment controls for multiple products
   - Add last purchase price display for pricing reference

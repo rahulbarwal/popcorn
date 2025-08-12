@@ -106,6 +106,46 @@ graph TB
   - Warehouse filtering integration
   - Auto-refresh with configurable intervals
 
+#### Enhanced Stock Filter Component
+
+- **Purpose**: Provide advanced stock status filtering for improved product discoverability
+- **Features**:
+  - Dropdown filter with options: "All products", "Low stock", "Out of stock"
+  - Real-time filtering without page refresh
+  - Integration with existing warehouse and search filters
+  - Clear visual indication of active filter state
+  - Filter state persistence across navigation
+  - Immediate table updates when filter selection changes
+  - Combination with other filtering mechanisms
+
+#### Inline Edit Component System
+
+- **Purpose**: Enable quick product information updates directly within table rows
+- **Features**:
+  - In-place editing for Sale Price, Cost Price, Category, and Reorder Point fields
+  - Click-to-edit interaction pattern with visual feedback
+  - Per-row Save/Discard action buttons
+  - Real-time validation with field-specific error messages
+  - Atomic save operations for multiple field changes
+  - Optimistic UI updates with rollback on failure
+  - Concurrent edit conflict resolution
+  - Auto-save with configurable delay option
+  - Keyboard navigation support (Tab, Enter, Escape)
+  - Touch-friendly controls for mobile devices
+
+#### Real-time Update System
+
+- **Purpose**: Ensure immediate database persistence and cross-component synchronization
+- **Features**:
+  - Immediate database writes on successful validation
+  - Real-time dashboard metric recalculation
+  - Cross-component data synchronization
+  - WebSocket or Server-Sent Events for multi-user updates
+  - Offline change queuing with retry mechanisms
+  - Audit trail logging for all inline modifications
+  - Conflict resolution for concurrent edits
+  - Performance optimization for bulk updates
+
 #### Purchase Order Creation Modal Component
 
 - **Purpose**: Guided workflow for creating purchase orders from selected products
@@ -237,6 +277,29 @@ graph TB
   - `PUT /api/purchase-orders/{id}/receive` - Update received quantities
   - `GET /api/suppliers` - Supplier information
   - `GET /api/suppliers/by-products` - Suppliers filtered by product associations
+
+#### Enhanced Stock Filtering Service
+
+- **Endpoints**:
+  - `GET /api/dashboard/stock-levels?stock_filter={all|low_stock|out_of_stock}` - Enhanced stock filtering with new filter options
+  - `GET /api/products?stock_filter={all|low_stock|out_of_stock}` - Product filtering with stock status
+  - `GET /api/dashboard/filter-options` - Available filter options and current counts
+
+#### Inline Edit Service
+
+- **Endpoints**:
+  - `PATCH /api/products/{id}/inline` - Update specific product fields inline
+  - `PUT /api/products/{id}/fields` - Bulk update multiple fields atomically
+  - `POST /api/products/validate-inline` - Validate field values before saving
+  - `GET /api/products/categories` - Available categories for dropdown
+  - `POST /api/products/{id}/audit` - Log inline edit actions for audit trail
+
+#### Real-time Synchronization Service
+
+- **Endpoints**:
+  - `GET /api/realtime/subscribe` - WebSocket endpoint for real-time updates
+  - `POST /api/realtime/broadcast` - Broadcast changes to connected clients
+  - `GET /api/dashboard/metrics/live` - Live dashboard metrics with change notifications
 
 ## Data Models
 
@@ -699,6 +762,148 @@ Based on your requirements, the database schema includes:
     }
   ],
   "product_ids": [1, 2, 3, 4, 5]
+}
+```
+
+#### Enhanced Stock Filter Response
+
+```json
+{
+  "products": [
+    {
+      "id": 1,
+      "sku": "ABC-123",
+      "name": "Product Name",
+      "category": "Electronics",
+      "sale_price": 45.99,
+      "cost_price": 25.5,
+      "reorder_point": 50,
+      "total_quantity": 25,
+      "stock_status": "low_stock",
+      "editable_fields": {
+        "sale_price": true,
+        "cost_price": true,
+        "category": true,
+        "reorder_point": true
+      }
+    }
+  ],
+  "filters": {
+    "stock_filter": "low_stock",
+    "warehouse_id": null
+  },
+  "filter_counts": {
+    "all": 1250,
+    "low_stock": 45,
+    "out_of_stock": 12
+  }
+}
+```
+
+#### Inline Edit Request/Response
+
+**Inline Edit Request**
+
+```json
+{
+  "field": "sale_price",
+  "value": 49.99,
+  "product_id": 123
+}
+```
+
+**Inline Edit Response**
+
+```json
+{
+  "success": true,
+  "product": {
+    "id": 123,
+    "field": "sale_price",
+    "old_value": 45.99,
+    "new_value": 49.99,
+    "updated_at": "2024-12-08T10:30:00Z"
+  },
+  "affected_metrics": {
+    "total_stock_value": 125500.75,
+    "stock_status_changed": false
+  },
+  "message": "Sale price updated successfully"
+}
+```
+
+**Bulk Field Update Request**
+
+```json
+{
+  "product_id": 123,
+  "fields": {
+    "sale_price": 49.99,
+    "cost_price": 27.0,
+    "category": "Premium Electronics",
+    "reorder_point": 75
+  }
+}
+```
+
+**Bulk Field Update Response**
+
+```json
+{
+  "success": true,
+  "product": {
+    "id": 123,
+    "updated_fields": {
+      "sale_price": {
+        "old_value": 45.99,
+        "new_value": 49.99
+      },
+      "cost_price": {
+        "old_value": 25.5,
+        "new_value": 27.0
+      },
+      "category": {
+        "old_value": "Electronics",
+        "new_value": "Premium Electronics"
+      },
+      "reorder_point": {
+        "old_value": 50,
+        "new_value": 75
+      }
+    },
+    "updated_at": "2024-12-08T10:30:00Z"
+  },
+  "affected_metrics": {
+    "total_stock_value": 125750.25,
+    "stock_status_changed": true,
+    "new_stock_status": "adequate"
+  },
+  "message": "Product updated successfully"
+}
+```
+
+#### Real-time Update Notification
+
+```json
+{
+  "type": "product_updated",
+  "product_id": 123,
+  "changes": {
+    "sale_price": {
+      "old_value": 45.99,
+      "new_value": 49.99
+    }
+  },
+  "affected_components": [
+    "summary_metrics",
+    "stock_levels",
+    "stock_visualization"
+  ],
+  "updated_metrics": {
+    "total_stock_value": 125500.75
+  },
+  "timestamp": "2024-12-08T10:30:00Z",
+  "user_id": 456
 }
 ```
 
