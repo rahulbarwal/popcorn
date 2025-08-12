@@ -142,3 +142,112 @@ The inventory dashboard is a comprehensive web application that provides warehou
 8. WHEN no data exists for the current filter THEN the system SHALL display an appropriate empty state message
 9. WHEN displaying the chart THEN the system SHALL follow brand styling guidelines for colors, fonts, and visual elements
 10. WHEN the chart loads THEN the system SHALL be responsive and adapt to different screen sizes while maintaining readability
+
+### Requirement 12
+
+**User Story:** As a warehouse manager, I want to view a comprehensive products page with detailed product information, so that I can manage all products in a single interface.
+
+#### Acceptance Criteria
+
+1. WHEN accessing the products page THEN the system SHALL display a table with columns: Image, Name, Category, Sale Price, Cost Price, Stock, and Warehouse count
+2. WHEN displaying product images THEN the system SHALL show thumbnail images with lazy loading for performance
+3. WHEN displaying stock information THEN the system SHALL show total stock quantity aggregated across all warehouses
+4. WHEN displaying warehouse count THEN the system SHALL show the number of warehouses where the product has inventory
+5. WHEN displaying pricing THEN the system SHALL format sale price and cost price as currency with appropriate decimal places
+6. WHEN the products table loads THEN the system SHALL support sorting by any column
+7. WHEN the products table loads THEN the system SHALL implement pagination for large product catalogs
+8. WHEN no products exist THEN the system SHALL display an appropriate empty state with option to add products
+
+### Requirement 13
+
+**User Story:** As a warehouse manager, I want to view detailed product information in a modal, so that I can quickly access comprehensive product data without leaving the products page.
+
+#### Acceptance Criteria
+
+1. WHEN clicking the "View" action on a product row THEN the system SHALL open a modal with detailed product information
+2. WHEN the product modal opens THEN the system SHALL display product image, name, SKU, description, category, sale price, and cost price
+3. WHEN the product modal opens THEN the system SHALL show stock levels broken down by warehouse location
+4. WHEN the product modal opens THEN the system SHALL display supplier information and recent purchase history
+5. WHEN the product modal opens THEN the system SHALL show product variants if they exist
+6. WHEN the modal is open THEN the system SHALL allow closing via close button, escape key, or clicking outside
+7. WHEN displaying stock in the modal THEN the system SHALL highlight low stock or out of stock conditions
+8. WHEN the modal loads THEN the system SHALL be responsive and accessible on mobile devices
+
+### Requirement 14
+
+**User Story:** As a warehouse manager, I want to add new products to the inventory system, so that I can expand the product catalog and track new items.
+
+#### Acceptance Criteria
+
+1. WHEN accessing the products page THEN the system SHALL display an "Add Product" button
+2. WHEN clicking "Add Product" THEN the system SHALL open a form modal for product creation
+3. WHEN the add product form opens THEN the system SHALL require fields: name, SKU, category, sale price, and cost price
+4. WHEN the add product form opens THEN the system SHALL provide optional fields: description, image upload, and supplier selection
+5. WHEN submitting the form THEN the system SHALL validate all required fields and display appropriate error messages
+6. WHEN submitting a valid form THEN the system SHALL create the product and refresh the products table
+7. WHEN creating a product THEN the system SHALL ensure SKU uniqueness and display error if duplicate
+8. WHEN uploading an image THEN the system SHALL validate file type and size restrictions
+9. WHEN the form is submitted successfully THEN the system SHALL close the modal and show a success message
+
+### Requirement 15
+
+**User Story:** As a warehouse manager, I want to edit existing product information, so that I can keep product data accurate and up-to-date.
+
+#### Acceptance Criteria
+
+1. WHEN viewing a product in the detail modal THEN the system SHALL display an "Edit" button
+2. WHEN clicking "Edit" THEN the system SHALL convert the modal to edit mode with form fields
+3. WHEN in edit mode THEN the system SHALL pre-populate all fields with current product data
+4. WHEN in edit mode THEN the system SHALL allow modification of name, description, category, sale price, cost price, and image
+5. WHEN in edit mode THEN the system SHALL prevent modification of SKU to maintain data integrity
+6. WHEN submitting edits THEN the system SHALL validate all fields and display appropriate error messages
+7. WHEN submitting valid edits THEN the system SHALL update the product and refresh the display
+8. WHEN in edit mode THEN the system SHALL provide "Save" and "Cancel" options
+9. WHEN canceling edits THEN the system SHALL revert to view mode without saving changes
+
+### Requirement 16
+
+**User Story:** As a warehouse manager, I want to delete products from the inventory system, so that I can remove discontinued or obsolete items.
+
+#### Acceptance Criteria
+
+1. WHEN viewing the products table THEN the system SHALL display a "Delete" action for each product row
+2. WHEN clicking "Delete" THEN the system SHALL display a confirmation dialog with product details
+3. WHEN the confirmation dialog opens THEN the system SHALL warn about consequences of deletion (stock levels, purchase orders)
+4. WHEN the confirmation dialog opens THEN the system SHALL require explicit confirmation before proceeding
+5. WHEN confirming deletion THEN the system SHALL remove the product and all associated inventory records
+6. WHEN confirming deletion THEN the system SHALL update the products table and show a success message
+7. WHEN a product has active purchase orders THEN the system SHALL prevent deletion and display appropriate warning
+8. WHEN a product has current stock THEN the system SHALL warn the user but allow deletion with confirmation
+9. WHEN deletion fails THEN the system SHALL display appropriate error messages and maintain data integrity
+
+### Requirement 17
+
+**User Story:** As a warehouse manager, I want to search and filter products on the products page, so that I can quickly find specific products in large catalogs.
+
+#### Acceptance Criteria
+
+1. WHEN accessing the products page THEN the system SHALL display a search input field
+2. WHEN typing in the search field THEN the system SHALL filter products by name, SKU, or category in real-time
+3. WHEN the products page loads THEN the system SHALL display category filter dropdown with all available categories
+4. WHEN selecting a category filter THEN the system SHALL show only products in that category
+5. WHEN the products page loads THEN the system SHALL display stock status filter (All, In Stock, Low Stock, Out of Stock)
+6. WHEN applying stock filters THEN the system SHALL show products matching the selected stock condition
+7. WHEN multiple filters are active THEN the system SHALL apply all filters simultaneously
+8. WHEN filters are applied THEN the system SHALL display the current filter state clearly
+9. WHEN clearing filters THEN the system SHALL reset to show all products
+
+### Requirement 18
+
+**User Story:** As a warehouse manager, I want to manage supplier relationships within the product interface, so that I can track which suppliers provide specific products.
+
+#### Acceptance Criteria
+
+1. WHEN viewing product details THEN the system SHALL display associated supplier information
+2. WHEN adding or editing a product THEN the system SHALL allow selection of primary supplier from dropdown
+3. WHEN displaying supplier information THEN the system SHALL show supplier name, contact details, and recent order history
+4. WHEN a product has multiple suppliers THEN the system SHALL display all supplier relationships
+5. WHEN viewing supplier details THEN the system SHALL show recent purchase orders for that product
+6. WHEN clicking on supplier information THEN the system SHALL provide option to view full supplier profile
+7. WHEN no supplier is assigned THEN the system SHALL display appropriate placeholder text
+8. WHEN supplier information changes THEN the system SHALL update product displays in real-time

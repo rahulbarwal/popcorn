@@ -311,3 +311,180 @@
   - Apply brand styling guidelines for colors, fonts, and visual elements
   - Write component tests for stock visualization functionality
   - _Requirements: 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10_
+
+- [ ] 20. Build products management service and API endpoints
+- [ ] 20.1 Implement product CRUD service functions
+
+  - Write service functions for product creation, reading, updating, and deletion
+  - Create database queries for product listing with filtering, sorting, and pagination
+  - Implement product validation logic including SKU uniqueness checking
+  - Add product-supplier relationship management functions
+  - Create product category management functions
+  - _Requirements: 12.1, 12.6, 12.7, 14.3, 14.6, 14.7, 15.3, 15.4, 15.6, 15.7, 16.5, 16.6, 17.2, 17.3, 17.4, 18.2_
+
+- [ ] 20.2 Create products management API endpoints
+
+  - Build GET /api/products endpoint with filtering, sorting, and pagination
+  - Create GET /api/products/{id} endpoint for detailed product information
+  - Implement POST /api/products endpoint for product creation with validation
+  - Build PUT /api/products/{id} endpoint for product updates
+  - Create DELETE /api/products/{id} endpoint with safety checks
+  - Add POST /api/products/{id}/image endpoint for image uploads
+  - Implement GET /api/products/categories endpoint
+  - Write unit tests for all product management API endpoints
+  - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 13.1, 13.2, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8, 15.9, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9_
+
+- [ ] 21. Build products page frontend component
+- [ ] 21.1 Create products table component
+
+  - Build responsive products table with Image, Name, Category, Sale Price, Cost Price, Stock, Warehouse count columns
+  - Implement lazy loading for product images with placeholder states
+  - Add sortable column headers with visual sort indicators
+  - Create pagination controls for large product catalogs
+  - Add loading states and error handling for product data
+  - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
+
+- [ ] 21.2 Add product table actions and interactions
+
+  - Implement "Add Product" button with modal trigger
+  - Create "View" action buttons for each product row
+  - Add "Delete" action buttons with confirmation dialogs
+  - Implement row selection and bulk actions (future enhancement)
+  - Add responsive behavior for mobile and tablet devices
+  - Write component tests for products table functionality
+  - _Requirements: 12.1, 12.8, 13.1, 14.1, 16.1, 16.2_
+
+- [ ] 22. Build product search and filtering functionality
+- [ ] 22.1 Create product search component
+
+  - Build real-time search input for product name, SKU, and category filtering
+  - Implement debounced search to optimize API calls
+  - Add search result highlighting and clear search functionality
+  - Create search suggestions dropdown for better user experience
+  - _Requirements: 17.1, 17.2_
+
+- [ ] 22.2 Add product filtering controls
+
+  - Create category filter dropdown with all available categories
+  - Implement stock status filter (All, In Stock, Low Stock, Out of Stock)
+  - Add price range filtering controls for sale price and cost price
+  - Create filter state management and URL synchronization
+  - Add clear all filters functionality and active filter indicators
+  - Write component tests for search and filtering functionality
+  - _Requirements: 17.3, 17.4, 17.5, 17.6, 17.7, 17.8, 17.9_
+
+- [ ] 23. Build product detail modal component
+- [ ] 23.1 Create product detail view modal
+
+  - Build modal component displaying product image, name, SKU, description, category, pricing
+  - Implement stock levels breakdown by warehouse location with visual indicators
+  - Add supplier information display with contact details
+  - Create product variants display if applicable
+  - Show recent purchase history for the product
+  - Add modal navigation controls (close button, escape key, outside click)
+  - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
+
+- [ ] 23.2 Add product detail modal responsiveness and accessibility
+
+  - Implement responsive modal design for mobile and tablet devices
+  - Add ARIA labels and keyboard navigation support
+  - Create loading states for product detail data fetching
+  - Add error handling for failed product detail requests
+  - Write component tests for product detail modal functionality
+  - _Requirements: 13.8, 7.4_
+
+- [ ] 24. Build product form component for add/edit operations
+- [ ] 24.1 Create product form with validation
+
+  - Build form component with required fields: name, SKU, category, sale price, cost price
+  - Add optional fields: description, image upload, supplier selection
+  - Implement real-time form validation with error messages
+  - Create SKU uniqueness validation with backend checking
+  - Add image upload with file type and size validation
+  - _Requirements: 14.3, 14.4, 14.5, 14.7, 14.8, 15.3, 15.4, 15.5, 15.6_
+
+- [ ] 24.2 Add form submission and state management
+
+  - Implement form submission for both create and edit modes
+  - Add loading states during form submission
+  - Create success and error message handling
+  - Add form reset and cancel functionality
+  - Implement supplier dropdown with search capability
+  - Write component tests for product form functionality
+  - _Requirements: 14.5, 14.6, 14.9, 15.6, 15.7, 15.8, 15.9_
+
+- [ ] 25. Build product edit functionality
+- [ ] 25.1 Create edit mode for product detail modal
+
+  - Add "Edit" button to product detail modal
+  - Implement modal state switching between view and edit modes
+  - Pre-populate form fields with current product data
+  - Prevent SKU modification in edit mode for data integrity
+  - Add save and cancel buttons with appropriate actions
+  - _Requirements: 15.1, 15.2, 15.3, 15.5, 15.8, 15.9_
+
+- [ ] 25.2 Integrate edit functionality with form validation
+
+  - Connect edit mode to product form component
+  - Implement validation for edit operations
+  - Add confirmation dialogs for unsaved changes
+  - Create optimistic updates with rollback on failure
+  - Write component tests for product edit functionality
+  - _Requirements: 15.4, 15.6, 15.7, 15.8, 15.9_
+
+- [ ] 26. Build product deletion functionality
+- [ ] 26.1 Create delete confirmation system
+
+  - Build confirmation dialog component with product details
+  - Add warnings about deletion consequences (stock levels, purchase orders)
+  - Implement safety checks for products with active purchase orders
+  - Create stock level warnings for products with current inventory
+  - Add explicit confirmation requirements before deletion
+  - _Requirements: 16.2, 16.3, 16.4, 16.7, 16.8_
+
+- [ ] 26.2 Implement delete operations with error handling
+
+  - Connect delete confirmation to API delete endpoint
+  - Add loading states during deletion process
+  - Implement success messages and table refresh after deletion
+  - Create comprehensive error handling for failed deletions
+  - Add data integrity protection and rollback mechanisms
+  - Write component tests for product deletion functionality
+  - _Requirements: 16.5, 16.6, 16.9_
+
+- [ ] 27. Build supplier integration within product management
+- [ ] 27.1 Create supplier display and selection components
+
+  - Build supplier information display within product details
+  - Create supplier dropdown component with search functionality
+  - Implement supplier contact details display
+  - Add recent purchase order history for product-supplier relationships
+  - Create multiple supplier support for products
+  - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.5_
+
+- [ ] 27.2 Add supplier management interactions
+
+  - Implement supplier profile navigation from product interface
+  - Add supplier assignment and removal functionality
+  - Create placeholder displays for products without suppliers
+  - Add real-time updates when supplier information changes
+  - Write component tests for supplier integration functionality
+  - _Requirements: 18.6, 18.7, 18.8_
+
+- [ ] 28. Integrate product management with existing dashboard
+- [ ] 28.1 Add navigation and routing for products page
+
+  - Create navigation menu item for products page
+  - Implement React Router configuration for products routes
+  - Add breadcrumb navigation for product management sections
+  - Create deep linking support for product details and edit modes
+  - _Requirements: All product management requirements need navigation_
+
+- [ ] 28.2 Connect product management to dashboard metrics
+
+  - Update summary metrics to reflect product management changes
+  - Ensure stock levels component updates when products are modified
+  - Connect warehouse filtering to product management pages
+  - Add real-time updates across dashboard when products change
+  - Write integration tests for product management and dashboard connectivity
+  - _Requirements: 6.1, 6.2, 6.6, 8.2, 8.4_

@@ -93,6 +93,46 @@ graph TB
   - Brand-consistent styling and color scheme
   - Empty state handling for filtered views
 
+#### Products Management Component
+
+- **Purpose**: Comprehensive product management interface with CRUD operations
+- **Features**:
+  - Product table with Image, Name, Category, Sale Price, Cost Price, Stock, Warehouse count columns
+  - Sortable columns with pagination for large catalogs
+  - Search and filter functionality (name, SKU, category, stock status)
+  - Add Product button with form modal
+  - View action opening detailed product modal
+  - Delete action with confirmation dialog
+  - Lazy loading for product images
+  - Responsive table layout for mobile devices
+
+#### Product Detail Modal Component
+
+- **Purpose**: Display and edit detailed product information
+- **Features**:
+  - View mode showing product image, details, stock breakdown by warehouse
+  - Edit mode with form fields for product modification
+  - Supplier information display and management
+  - Product variants display if applicable
+  - Recent purchase history for the product
+  - Stock level indicators (low stock, out of stock)
+  - Image upload functionality
+  - Form validation and error handling
+  - Responsive modal design
+
+#### Product Form Component
+
+- **Purpose**: Handle product creation and editing operations
+- **Features**:
+  - Required fields: name, SKU, category, sale price, cost price
+  - Optional fields: description, image upload, supplier selection
+  - Real-time form validation
+  - SKU uniqueness checking
+  - Image file type and size validation
+  - Supplier dropdown with search capability
+  - Success and error message handling
+  - Form reset and cancel functionality
+
 ### Backend Services
 
 #### Dashboard API Service
@@ -119,6 +159,20 @@ graph TB
   - `GET /api/purchase-orders/{id}` - Detailed purchase order
   - `GET /api/suppliers` - Supplier information
 
+#### Products Management Service
+
+- **Endpoints**:
+  - `GET /api/products` - Product list with filtering, sorting, and pagination
+  - `GET /api/products/{id}` - Detailed product information with stock breakdown
+  - `POST /api/products` - Create new product
+  - `PUT /api/products/{id}` - Update existing product
+  - `DELETE /api/products/{id}` - Delete product with validation
+  - `POST /api/products/{id}/image` - Upload product image
+  - `GET /api/products/categories` - Available product categories
+  - `GET /api/products/{id}/suppliers` - Product supplier relationships
+  - `POST /api/products/{id}/suppliers` - Add supplier to product
+  - `DELETE /api/products/{id}/suppliers/{supplierId}` - Remove supplier from product
+
 ## Data Models
 
 ### Database Schema
@@ -135,6 +189,8 @@ Based on your requirements, the database schema includes:
 - name
 - description
 - category
+- sale_price
+- cost_price
 - image_url
 - created_at
 - updated_at
