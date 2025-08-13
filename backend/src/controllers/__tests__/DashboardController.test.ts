@@ -3,11 +3,13 @@ import express from "express";
 import { DashboardController } from "../DashboardController";
 import { SummaryMetricsService } from "../../services/SummaryMetricsService";
 import { StockLevelsService } from "../../services/StockLevelsService";
+import { PurchaseOrderService } from "../../services/PurchaseOrderService";
 import { cache } from "../../utils/cache";
 
 // Mock the services
 jest.mock("../../services/SummaryMetricsService");
 jest.mock("../../services/StockLevelsService");
+jest.mock("../../services/PurchaseOrderService");
 jest.mock("../../utils/cache");
 
 describe("DashboardController", () => {
@@ -15,6 +17,7 @@ describe("DashboardController", () => {
   let controller: DashboardController;
   let mockSummaryMetricsService: jest.Mocked<SummaryMetricsService>;
   let mockStockLevelsService: jest.Mocked<StockLevelsService>;
+  let mockPurchaseOrderService: jest.Mocked<PurchaseOrderService>;
 
   beforeEach(() => {
     // Clear all mocks
@@ -28,10 +31,15 @@ describe("DashboardController", () => {
     controller = new DashboardController();
     mockSummaryMetricsService = (controller as any).summaryMetricsService;
     mockStockLevelsService = (controller as any).stockLevelsService;
+    mockPurchaseOrderService = (controller as any).purchaseOrderService;
 
     // Set up routes
     app.get("/summary-metrics", controller.getSummaryMetrics.bind(controller));
     app.get("/stock-levels", controller.getStockLevels.bind(controller));
+    app.get(
+      "/recent-purchases",
+      controller.getRecentPurchases.bind(controller)
+    );
   });
 
   describe("GET /summary-metrics", () => {
@@ -594,6 +602,387 @@ describe("DashboardController", () => {
       expect(mockStockLevelsService.getStockLevels).toHaveBeenCalledWith(
         combinedFilters,
         { page: 1, limit: 50 }
+      );
+    });
+  });
+
+  describe("GET /recent-purchases", () => {
+    const mockRecentPurchasesResponse = {
+      recent_orders: [
+        {
+          id: 1,
+          po_number: "PO-2024-001",
+          supplier: {
+            id: 1,
+            name: "Supplier A",
+            contact_name: "John Doe",
+          },
+          order_date: "2024-12-01",
+          expected_delivery_date: "2024-12-15",
+          status: "pending" as const,
+          product_count: 5,
+          total_amount: 1500.0,
+          is_overdue: false,
+        },
+        {
+          id: 2,
+          po_number: "PO-2024-002",
+          supplier: {
+            id: 2,
+            name: "Supplier B",
+            contact_name: "Jane Smith",
+          },
+          order_date: "2024-11-28",
+          expected_delivery_date: "2024-12-10",
+          status: "shipped" as const,
+          product_count: 8,
+          total_amount: 2300.0,
+          is_overdue: true,
+        },
+      ],
+    };
+
+    it("should return recent purchases without filters", async () => {
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        mockRecentPurchasesResponse
+      );
+
+      const response = await request(app).get("/recent-purchases").expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual(mockRecentPurchasesResponse);
+
+      // Verify service was called with default parameters
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        {},
+        10
+      );
+
+      // Verify cache was set
+      expect(cache.set).toHaveBeenCalled();
+    });
+
+    it("should return recent purchases with warehouse filter", async () => {
+      const warehouseId = 1;
+      const filteredResponse = {
+        ...mockRecentPurchasesResponse,
+        warehouse_filter: {
+          id: warehouseId,
+          name: `Warehouse ${warehouseId}`,
+        },
+      };
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        filteredResponse
+      );
+
+      const response = await request(app)
+        .get(`/recent-purchases?warehouse_id=${warehouseId}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.warehouse_filter).toEqual({
+        id: warehouseId,
+        name: `Warehouse ${warehouseId}`,
+      });
+
+      // Verify service was called with warehouse filter
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        { warehouse_id: warehouseId },
+        10
+      );
+    });
+
+    it("should return recent purchases with supplier filter", async () => {
+      const supplierId = 1;
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        mockRecentPurchasesResponse
+      );
+
+      const response = await request(app)
+        .get(`/recent-purchases?supplier_id=${supplierId}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with supplier filter
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        { supplier_id: supplierId },
+        10
+      );
+    });
+
+    it("should return recent purchases with status filter", async () => {
+      const status = "pending";
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        mockRecentPurchasesResponse
+      );
+
+      const response = await request(app)
+        .get(`/recent-purchases?status=${status}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with status filter
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        { status: status },
+        10
+      );
+    });
+
+    it("should return recent purchases with date range filter", async () => {
+      const dateFrom = "2024-12-01";
+      const dateTo = "2024-12-31";
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        mockRecentPurchasesResponse
+      );
+
+      const response = await request(app)
+        .get(`/recent-purchases?date_from=${dateFrom}&date_to=${dateTo}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with date filters
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        { date_from: dateFrom, date_to: dateTo },
+        10
+      );
+    });
+
+    it("should handle custom limit parameter", async () => {
+      const limit = 5;
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        mockRecentPurchasesResponse
+      );
+
+      const response = await request(app)
+        .get(`/recent-purchases?limit=${limit}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with custom limit
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        {},
+        limit
+      );
+    });
+
+    it("should return cached response when available", async () => {
+      // Mock cache hit
+      (cache.get as jest.Mock).mockReturnValue(mockRecentPurchasesResponse);
+
+      const response = await request(app).get("/recent-purchases").expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual(mockRecentPurchasesResponse);
+
+      // Verify service was not called
+      expect(
+        mockPurchaseOrderService.getRecentPurchases
+      ).not.toHaveBeenCalled();
+
+      // Verify cache was checked
+      expect(cache.get).toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid warehouse_id", async () => {
+      const response = await request(app)
+        .get("/recent-purchases?warehouse_id=invalid")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe("Invalid warehouse_id parameter");
+
+      // Verify service was not called
+      expect(
+        mockPurchaseOrderService.getRecentPurchases
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid supplier_id", async () => {
+      const response = await request(app)
+        .get("/recent-purchases?supplier_id=invalid")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe("Invalid supplier_id parameter");
+
+      // Verify service was not called
+      expect(
+        mockPurchaseOrderService.getRecentPurchases
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid limit parameter", async () => {
+      const response = await request(app)
+        .get("/recent-purchases?limit=51")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe(
+        "Invalid limit parameter. Must be between 1 and 50."
+      );
+
+      // Verify service was not called
+      expect(
+        mockPurchaseOrderService.getRecentPurchases
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid status parameter", async () => {
+      const response = await request(app)
+        .get("/recent-purchases?status=invalid")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe(
+        "Invalid status parameter. Must be 'pending', 'confirmed', 'shipped', 'delivered', or 'cancelled'."
+      );
+
+      // Verify service was not called
+      expect(
+        mockPurchaseOrderService.getRecentPurchases
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid date_from parameter", async () => {
+      const response = await request(app)
+        .get("/recent-purchases?date_from=invalid-date")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe(
+        "Invalid date_from parameter. Must be a valid date string."
+      );
+
+      // Verify service was not called
+      expect(
+        mockPurchaseOrderService.getRecentPurchases
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid date_to parameter", async () => {
+      const response = await request(app)
+        .get("/recent-purchases?date_to=invalid-date")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe(
+        "Invalid date_to parameter. Must be a valid date string."
+      );
+
+      // Verify service was not called
+      expect(
+        mockPurchaseOrderService.getRecentPurchases
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should handle service errors gracefully", async () => {
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service error
+      const errorMessage = "Database connection failed";
+      mockPurchaseOrderService.getRecentPurchases.mockRejectedValue(
+        new Error(errorMessage)
+      );
+
+      const response = await request(app).get("/recent-purchases").expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe("Failed to fetch recent purchases");
+      expect(response.body.message).toBe(errorMessage);
+    });
+
+    it("should handle multiple filters combined", async () => {
+      const warehouseId = 1;
+      const supplierId = 2;
+      const status = "pending";
+      const dateFrom = "2024-12-01";
+      const dateTo = "2024-12-31";
+      const limit = 15;
+
+      const combinedFilters = {
+        warehouse_id: warehouseId,
+        supplier_id: supplierId,
+        status: status,
+        date_from: dateFrom,
+        date_to: dateTo,
+      };
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        mockRecentPurchasesResponse
+      );
+
+      const response = await request(app)
+        .get(
+          `/recent-purchases?warehouse_id=${warehouseId}&supplier_id=${supplierId}&status=${status}&date_from=${dateFrom}&date_to=${dateTo}&limit=${limit}`
+        )
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with all filters
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        combinedFilters,
+        limit
+      );
+    });
+
+    it("should filter out undefined parameters", async () => {
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockPurchaseOrderService.getRecentPurchases.mockResolvedValue(
+        mockRecentPurchasesResponse
+      );
+
+      const response = await request(app)
+        .get("/recent-purchases?warehouse_id=1&supplier_id=")
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with only defined filters
+      expect(mockPurchaseOrderService.getRecentPurchases).toHaveBeenCalledWith(
+        { warehouse_id: 1 },
+        10
       );
     });
   });

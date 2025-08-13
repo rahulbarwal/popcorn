@@ -1,22 +1,27 @@
 import { Request, Response } from "express";
 import { SummaryMetricsService } from "../services/SummaryMetricsService";
 import { StockLevelsService } from "../services/StockLevelsService";
+import { PurchaseOrderService } from "../services/PurchaseOrderService";
 import {
   SummaryMetricsResponse,
   StockLevelsResponse,
+  RecentPurchasesResponse,
   ApiResponse,
   PaginationParams,
   StockFilter,
+  OrderStatus,
 } from "../types";
 import { cache, MemoryCache } from "../utils/cache";
 
 export class DashboardController {
   private summaryMetricsService: SummaryMetricsService;
   private stockLevelsService: StockLevelsService;
+  private purchaseOrderService: PurchaseOrderService;
 
   constructor() {
     this.summaryMetricsService = new SummaryMetricsService();
     this.stockLevelsService = new StockLevelsService();
+    this.purchaseOrderService = new PurchaseOrderService();
   }
 
   /**
@@ -194,6 +199,133 @@ export class DashboardController {
       res.status(500).json({
         success: false,
         error: "Failed to fetch stock levels",
+        message:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * GET /api/dashboard/recent-purchases
+   * Get recent purchase orders with supplier information
+   * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
+   */
+  async getRecentPurchases(req: Request, res: Response): Promise<void> {
+    try {
+      // Parse query parameters
+      const warehouseId = req.query.warehouse_id
+        ? parseInt(req.query.warehouse_id as string)
+        : undefined;
+
+      const supplierId = req.query.supplier_id
+        ? parseInt(req.query.supplier_id as string)
+        : undefined;
+
+      const status = req.query.status as OrderStatus;
+      const dateFrom = req.query.date_from as string;
+      const dateTo = req.query.date_to as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+      // Validate parameters
+      if (req.query.warehouse_id && isNaN(warehouseId!)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid warehouse_id parameter",
+        } as ApiResponse);
+        return;
+      }
+
+      if (req.query.supplier_id && isNaN(supplierId!)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid supplier_id parameter",
+        } as ApiResponse);
+        return;
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 50) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid limit parameter. Must be between 1 and 50.",
+        } as ApiResponse);
+        return;
+      }
+
+      if (
+        status &&
+        !["pending", "confirmed", "shipped", "delivered", "cancelled"].includes(
+          status
+        )
+      ) {
+        res.status(400).json({
+          success: false,
+          error:
+            "Invalid status parameter. Must be 'pending', 'confirmed', 'shipped', 'delivered', or 'cancelled'.",
+        } as ApiResponse);
+        return;
+      }
+
+      // Validate date formats if provided
+      if (dateFrom && isNaN(Date.parse(dateFrom))) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid date_from parameter. Must be a valid date string.",
+        } as ApiResponse);
+        return;
+      }
+
+      if (dateTo && isNaN(Date.parse(dateTo))) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid date_to parameter. Must be a valid date string.",
+        } as ApiResponse);
+        return;
+      }
+
+      // Build filters object
+      const filters = {
+        warehouse_id: warehouseId,
+        supplier_id: supplierId,
+        status,
+        date_from: dateFrom,
+        date_to: dateTo,
+      };
+
+      // Remove undefined values
+      Object.keys(filters).forEach((key) => {
+        if (filters[key as keyof typeof filters] === undefined) {
+          delete filters[key as keyof typeof filters];
+        }
+      });
+
+      // Check cache first (cache for 30 seconds as purchase orders change less frequently than stock)
+      const cacheKey = MemoryCache.generateRecentPurchasesKey(filters, limit);
+      const cachedResponse = cache.get(cacheKey);
+
+      if (cachedResponse) {
+        res.json({
+          success: true,
+          data: cachedResponse,
+        } as ApiResponse<RecentPurchasesResponse>);
+        return;
+      }
+
+      // Get recent purchases from service
+      const recentPurchasesResponse =
+        await this.purchaseOrderService.getRecentPurchases(filters, limit);
+
+      // Cache the response for 30 seconds
+      cache.set(cacheKey, recentPurchasesResponse, 30 * 1000);
+
+      res.json({
+        success: true,
+        data: recentPurchasesResponse,
+      } as ApiResponse<RecentPurchasesResponse>);
+    } catch (error) {
+      console.error("Error fetching recent purchases:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch recent purchases",
         message:
           error instanceof Error ? error.message : "Unknown error occurred",
       } as ApiResponse);

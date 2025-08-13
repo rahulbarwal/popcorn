@@ -90,6 +90,18 @@ export class MemoryCache {
 
     return `stock_levels_${filterStr}_${paginationStr}`;
   }
+
+  /**
+   * Generate cache key for recent purchases
+   */
+  static generateRecentPurchasesKey(filters: any, limit: number): string {
+    const filterStr = Object.keys(filters)
+      .sort()
+      .map((key) => `${key}:${filters[key]}`)
+      .join("|");
+
+    return `recent_purchases_${filterStr}_limit:${limit}`;
+  }
 }
 
 // Create a singleton instance

@@ -31,4 +31,20 @@ router.get(
   dashboardController.getStockLevels.bind(dashboardController)
 );
 
+/**
+ * GET /api/dashboard/recent-purchases
+ * Get recent purchase orders with supplier information
+ * Query parameters:
+ * - warehouse_id (optional): Filter by specific warehouse
+ * - supplier_id (optional): Filter by specific supplier
+ * - status (optional): Filter by order status ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')
+ * - date_from (optional): Filter orders from this date (YYYY-MM-DD format)
+ * - date_to (optional): Filter orders to this date (YYYY-MM-DD format)
+ * - limit (optional): Number of orders to return (default: 10, max: 50)
+ */
+router.get(
+  "/recent-purchases",
+  dashboardController.getRecentPurchases.bind(dashboardController)
+);
+
 export default router;

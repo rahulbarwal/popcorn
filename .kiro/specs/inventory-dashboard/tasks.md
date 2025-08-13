@@ -64,15 +64,15 @@
   - Write unit tests for stock levels service and API endpoint
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 8.2, 8.4, 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 6. Build purchase order service and recent purchases API
-- [ ] 6.1 Implement purchase order data retrieval
+- [x] 6. Build purchase order service and recent purchases API
+- [x] 6.1 Implement purchase order data retrieval
 
   - Write service functions to fetch recent purchase orders with supplier information
   - Create queries to get last 10 orders sorted by date with product counts
   - Implement order status tracking and filtering logic
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 6.2 Create recent purchases API endpoint
+- [x] 6.2 Create recent purchases API endpoint
 
   - Build GET /api/dashboard/recent-purchases endpoint
   - Implement response formatting with supplier details and order summaries
