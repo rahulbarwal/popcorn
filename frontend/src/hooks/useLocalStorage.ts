@@ -1,0 +1,75 @@
+import { useState, useEffect } from "react";
+
+/**
+ * Hook for managing localStorage with React state
+ * @param key - The localStorage key
+ * @param initialValue - Initial value if key doesn't exist
+ * @returns [value, setValue] tuple
+ */
+export const useLocalStorage = <T>(
+  key: string,
+  initialValue: T
+): [T, (value: T | ((val: T) => T)) => void] => {
+  // Get value from localStorage or use initial value
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
+
+  // Update localStorage when state changes
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      // Allow value to be a function so we have the same API as useState
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(`Error setting localStorage key "${key}":`, error);
+    }
+  };
+
+  return [storedValue, setValue];
+};
+
+/**
+ * Hook for managing session storage with React state
+ * @param key - The sessionStorage key
+ * @param initialValue - Initial value if key doesn't exist
+ * @returns [value, setValue] tuple
+ */
+export const useSessionStorage = <T>(
+  key: string,
+  initialValue: T
+): [T, (value: T | ((val: T) => T)) => void] => {
+  // Get value from sessionStorage or use initial value
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.sessionStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading sessionStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
+
+  // Update sessionStorage when state changes
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      // Allow value to be a function so we have the same API as useState
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(`Error setting sessionStorage key "${key}":`, error);
+    }
+  };
+
+  return [storedValue, setValue];
+};
