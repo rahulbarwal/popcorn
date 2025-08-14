@@ -80,15 +80,15 @@
   - Write unit tests for purchase order service and API endpoint
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 7. Implement warehouse distribution functionality
-- [ ] 7.1 Create location-based inventory queries
+- [x] 7. Implement warehouse distribution functionality
+- [x] 7.1 Create location-based inventory queries
 
   - Write service functions to group inventory by warehouse locations
   - Implement location filtering and quantity breakdown logic
   - Create queries to identify stock distribution imbalances
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 7.2 Build warehouse distribution API endpoint
+- [x] 7.2 Build warehouse distribution API endpoint
 
   - Create GET /api/dashboard/warehouse-distribution endpoint
   - Implement location-based filtering and grouping in API responses

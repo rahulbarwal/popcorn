@@ -102,6 +102,18 @@ export class MemoryCache {
 
     return `recent_purchases_${filterStr}_limit:${limit}`;
   }
+
+  /**
+   * Generate cache key for warehouse distribution
+   */
+  static generateWarehouseDistributionKey(filters: any): string {
+    const filterStr = Object.keys(filters)
+      .sort()
+      .map((key) => `${key}:${filters[key]}`)
+      .join("|");
+
+    return `warehouse_distribution_${filterStr}`;
+  }
 }
 
 // Create a singleton instance

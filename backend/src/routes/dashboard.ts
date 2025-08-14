@@ -47,4 +47,18 @@ router.get(
   dashboardController.getRecentPurchases.bind(dashboardController)
 );
 
+/**
+ * GET /api/dashboard/warehouse-distribution
+ * Get inventory distribution across warehouse locations
+ * Query parameters:
+ * - warehouse_id (optional): Filter by specific warehouse
+ * - product_id (optional): Filter by specific product
+ * - category (optional): Filter by product category
+ * - min_value (optional): Filter products with minimum total value
+ */
+router.get(
+  "/warehouse-distribution",
+  dashboardController.getWarehouseDistribution.bind(dashboardController)
+);
+
 export default router;

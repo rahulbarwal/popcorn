@@ -4,12 +4,14 @@ import { DashboardController } from "../DashboardController";
 import { SummaryMetricsService } from "../../services/SummaryMetricsService";
 import { StockLevelsService } from "../../services/StockLevelsService";
 import { PurchaseOrderService } from "../../services/PurchaseOrderService";
+import { WarehouseDistributionService } from "../../services/WarehouseDistributionService";
 import { cache } from "../../utils/cache";
 
 // Mock the services
 jest.mock("../../services/SummaryMetricsService");
 jest.mock("../../services/StockLevelsService");
 jest.mock("../../services/PurchaseOrderService");
+jest.mock("../../services/WarehouseDistributionService");
 jest.mock("../../utils/cache");
 
 describe("DashboardController", () => {
@@ -18,6 +20,7 @@ describe("DashboardController", () => {
   let mockSummaryMetricsService: jest.Mocked<SummaryMetricsService>;
   let mockStockLevelsService: jest.Mocked<StockLevelsService>;
   let mockPurchaseOrderService: jest.Mocked<PurchaseOrderService>;
+  let mockWarehouseDistributionService: jest.Mocked<WarehouseDistributionService>;
 
   beforeEach(() => {
     // Clear all mocks
@@ -32,6 +35,8 @@ describe("DashboardController", () => {
     mockSummaryMetricsService = (controller as any).summaryMetricsService;
     mockStockLevelsService = (controller as any).stockLevelsService;
     mockPurchaseOrderService = (controller as any).purchaseOrderService;
+    mockWarehouseDistributionService = (controller as any)
+      .warehouseDistributionService;
 
     // Set up routes
     app.get("/summary-metrics", controller.getSummaryMetrics.bind(controller));
@@ -39,6 +44,10 @@ describe("DashboardController", () => {
     app.get(
       "/recent-purchases",
       controller.getRecentPurchases.bind(controller)
+    );
+    app.get(
+      "/warehouse-distribution",
+      controller.getWarehouseDistribution.bind(controller)
     );
   });
 
@@ -984,6 +993,314 @@ describe("DashboardController", () => {
         { warehouse_id: 1 },
         10
       );
+    });
+  });
+
+  describe("GET /warehouse-distribution", () => {
+    const mockWarehouseDistributionResponse = {
+      warehouses: [
+        {
+          warehouse_id: 1,
+          warehouse_name: "Main Warehouse",
+          warehouse_address: "123 Main St",
+          products: [
+            {
+              product_id: 1,
+              sku: "ABC-123",
+              name: "Product A",
+              quantity: 100,
+              unit_cost: 25.5,
+              total_value: 2550.0,
+            },
+            {
+              product_id: 2,
+              sku: "DEF-456",
+              name: "Product B",
+              quantity: 50,
+              unit_cost: 15.0,
+              total_value: 750.0,
+            },
+          ],
+          total_products: 2,
+          total_value: 3300.0,
+        },
+        {
+          warehouse_id: 2,
+          warehouse_name: "Secondary Warehouse",
+          warehouse_address: "456 Oak Ave",
+          products: [
+            {
+              product_id: 1,
+              sku: "ABC-123",
+              name: "Product A",
+              quantity: 75,
+              unit_cost: 25.5,
+              total_value: 1912.5,
+            },
+          ],
+          total_products: 1,
+          total_value: 1912.5,
+        },
+      ],
+    };
+
+    it("should return warehouse distribution without filters", async () => {
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockWarehouseDistributionService.getWarehouseDistribution.mockResolvedValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get("/warehouse-distribution")
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual(mockWarehouseDistributionResponse);
+
+      // Verify service was called without filters
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).toHaveBeenCalledWith({});
+
+      // Verify cache was set
+      expect(cache.set).toHaveBeenCalled();
+    });
+
+    it("should return warehouse distribution with warehouse filter", async () => {
+      const warehouseId = 1;
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockWarehouseDistributionService.getWarehouseDistribution.mockResolvedValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get(`/warehouse-distribution?warehouse_id=${warehouseId}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual(mockWarehouseDistributionResponse);
+
+      // Verify service was called with warehouse filter
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).toHaveBeenCalledWith({ warehouse_id: warehouseId });
+    });
+
+    it("should return warehouse distribution with product filter", async () => {
+      const productId = 1;
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockWarehouseDistributionService.getWarehouseDistribution.mockResolvedValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get(`/warehouse-distribution?product_id=${productId}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with product filter
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).toHaveBeenCalledWith({ product_id: productId });
+    });
+
+    it("should return warehouse distribution with category filter", async () => {
+      const category = "Electronics";
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockWarehouseDistributionService.getWarehouseDistribution.mockResolvedValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get(`/warehouse-distribution?category=${category}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with category filter
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).toHaveBeenCalledWith({ category });
+    });
+
+    it("should return warehouse distribution with min_value filter", async () => {
+      const minValue = 100.5;
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockWarehouseDistributionService.getWarehouseDistribution.mockResolvedValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get(`/warehouse-distribution?min_value=${minValue}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with min_value filter
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).toHaveBeenCalledWith({ min_value: minValue });
+    });
+
+    it("should return cached response when available", async () => {
+      // Mock cache hit
+      (cache.get as jest.Mock).mockReturnValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get("/warehouse-distribution")
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual(mockWarehouseDistributionResponse);
+
+      // Verify service was not called
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).not.toHaveBeenCalled();
+
+      // Verify cache was checked
+      expect(cache.get).toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid warehouse_id", async () => {
+      const response = await request(app)
+        .get("/warehouse-distribution?warehouse_id=invalid")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe("Invalid warehouse_id parameter");
+
+      // Verify service was not called
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid product_id", async () => {
+      const response = await request(app)
+        .get("/warehouse-distribution?product_id=invalid")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe("Invalid product_id parameter");
+
+      // Verify service was not called
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for invalid min_value", async () => {
+      const response = await request(app)
+        .get("/warehouse-distribution?min_value=invalid")
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe("Invalid min_value parameter");
+
+      // Verify service was not called
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should handle service errors gracefully", async () => {
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service error
+      const errorMessage = "Database connection failed";
+      mockWarehouseDistributionService.getWarehouseDistribution.mockRejectedValue(
+        new Error(errorMessage)
+      );
+
+      const response = await request(app)
+        .get("/warehouse-distribution")
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe(
+        "Failed to fetch warehouse distribution"
+      );
+      expect(response.body.message).toBe(errorMessage);
+    });
+
+    it("should handle multiple filters combined", async () => {
+      const warehouseId = 1;
+      const productId = 2;
+      const category = "Electronics";
+      const minValue = 50.0;
+
+      const combinedFilters = {
+        warehouse_id: warehouseId,
+        product_id: productId,
+        category: category,
+        min_value: minValue,
+      };
+
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockWarehouseDistributionService.getWarehouseDistribution.mockResolvedValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get(
+          `/warehouse-distribution?warehouse_id=${warehouseId}&product_id=${productId}&category=${category}&min_value=${minValue}`
+        )
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with all filters
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).toHaveBeenCalledWith(combinedFilters);
+    });
+
+    it("should filter out undefined parameters", async () => {
+      // Mock cache miss
+      (cache.get as jest.Mock).mockReturnValue(null);
+
+      // Mock service response
+      mockWarehouseDistributionService.getWarehouseDistribution.mockResolvedValue(
+        mockWarehouseDistributionResponse
+      );
+
+      const response = await request(app)
+        .get("/warehouse-distribution?warehouse_id=1&category=")
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify service was called with only defined filters
+      expect(
+        mockWarehouseDistributionService.getWarehouseDistribution
+      ).toHaveBeenCalledWith({ warehouse_id: 1 });
     });
   });
 });

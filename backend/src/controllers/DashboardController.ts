@@ -2,10 +2,12 @@ import { Request, Response } from "express";
 import { SummaryMetricsService } from "../services/SummaryMetricsService";
 import { StockLevelsService } from "../services/StockLevelsService";
 import { PurchaseOrderService } from "../services/PurchaseOrderService";
+import { WarehouseDistributionService } from "../services/WarehouseDistributionService";
 import {
   SummaryMetricsResponse,
   StockLevelsResponse,
   RecentPurchasesResponse,
+  WarehouseDistributionResponse,
   ApiResponse,
   PaginationParams,
   StockFilter,
@@ -17,11 +19,13 @@ export class DashboardController {
   private summaryMetricsService: SummaryMetricsService;
   private stockLevelsService: StockLevelsService;
   private purchaseOrderService: PurchaseOrderService;
+  private warehouseDistributionService: WarehouseDistributionService;
 
   constructor() {
     this.summaryMetricsService = new SummaryMetricsService();
     this.stockLevelsService = new StockLevelsService();
     this.purchaseOrderService = new PurchaseOrderService();
+    this.warehouseDistributionService = new WarehouseDistributionService();
   }
 
   /**
@@ -326,6 +330,106 @@ export class DashboardController {
       res.status(500).json({
         success: false,
         error: "Failed to fetch recent purchases",
+        message:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * GET /api/dashboard/warehouse-distribution
+   * Get inventory distribution across warehouse locations
+   * Requirements: 3.1, 3.2, 3.3, 3.4
+   */
+  async getWarehouseDistribution(req: Request, res: Response): Promise<void> {
+    try {
+      // Parse query parameters
+      const warehouseId = req.query.warehouse_id
+        ? parseInt(req.query.warehouse_id as string)
+        : undefined;
+
+      const productId = req.query.product_id
+        ? parseInt(req.query.product_id as string)
+        : undefined;
+
+      const category = req.query.category as string;
+      const minValue = req.query.min_value
+        ? parseFloat(req.query.min_value as string)
+        : undefined;
+
+      // Validate parameters
+      if (req.query.warehouse_id && isNaN(warehouseId!)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid warehouse_id parameter",
+        } as ApiResponse);
+        return;
+      }
+
+      if (req.query.product_id && isNaN(productId!)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid product_id parameter",
+        } as ApiResponse);
+        return;
+      }
+
+      if (req.query.min_value && isNaN(minValue!)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid min_value parameter",
+        } as ApiResponse);
+        return;
+      }
+
+      // Build filters object
+      const filters = {
+        warehouse_id: warehouseId,
+        product_id: productId,
+        category: category?.trim(),
+        min_value: minValue,
+      };
+
+      // Remove undefined and empty string values
+      Object.keys(filters).forEach((key) => {
+        if (
+          filters[key as keyof typeof filters] === undefined ||
+          filters[key as keyof typeof filters] === ""
+        ) {
+          delete filters[key as keyof typeof filters];
+        }
+      });
+
+      // Check cache first (cache for 2 minutes as warehouse distribution changes less frequently)
+      const cacheKey = MemoryCache.generateWarehouseDistributionKey(filters);
+      const cachedResponse = cache.get(cacheKey);
+
+      if (cachedResponse) {
+        res.json({
+          success: true,
+          data: cachedResponse,
+        } as ApiResponse<WarehouseDistributionResponse>);
+        return;
+      }
+
+      // Get warehouse distribution from service
+      const warehouseDistributionResponse =
+        await this.warehouseDistributionService.getWarehouseDistribution(
+          filters
+        );
+
+      // Cache the response for 2 minutes
+      cache.set(cacheKey, warehouseDistributionResponse, 2 * 60 * 1000);
+
+      res.json({
+        success: true,
+        data: warehouseDistributionResponse,
+      } as ApiResponse<WarehouseDistributionResponse>);
+    } catch (error) {
+      console.error("Error fetching warehouse distribution:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch warehouse distribution",
         message:
           error instanceof Error ? error.message : "Unknown error occurred",
       } as ApiResponse);
