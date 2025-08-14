@@ -115,4 +115,31 @@ export class CompanyRepository extends BaseRepository<
       .orderBy("companies.name", "asc")
       .select("companies.*");
   }
+
+  /**
+   * Get all suppliers including inactive ones, ordered by name
+   */
+  async findAllSuppliersOrdered(): Promise<Company[]> {
+    return this.db(this.tableName).orderBy("name", "asc").select("*");
+  }
+
+  /**
+   * Search suppliers with ordering and limit
+   */
+  async searchSuppliersOrdered(
+    searchTerm: string,
+    limit: number = 20
+  ): Promise<Company[]> {
+    return this.db(this.tableName)
+      .where("active", true)
+      .where((builder) => {
+        builder
+          .where("name", "ilike", `%${searchTerm}%`)
+          .orWhere("contact_name", "ilike", `%${searchTerm}%`)
+          .orWhere("email", "ilike", `%${searchTerm}%`);
+      })
+      .orderBy("name", "asc")
+      .limit(limit)
+      .select("*");
+  }
 }
