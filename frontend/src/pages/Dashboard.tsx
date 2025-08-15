@@ -3,6 +3,7 @@ import Breadcrumb from "../components/Breadcrumb";
 import LoadingSpinner from "../components/LoadingSpinner";
 import WarehouseFilter from "../components/WarehouseFilter";
 import SummaryMetrics from "../components/SummaryMetrics";
+import StockLevels from "../components/StockLevels";
 import { useNotifications } from "../contexts/AppContext";
 import { useSelectedWarehouse } from "../contexts/WarehouseFilterContext";
 import { navigateToMetricDetails } from "../utils/navigation";
@@ -69,9 +70,13 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Stock Levels
           </h2>
-          <div className="flex items-center justify-center py-8">
-            <LoadingSpinner text="Stock levels component will be implemented in task 11" />
-          </div>
+          <StockLevels
+            maxItems={10}
+            onProductClick={(product) => {
+              console.log("Product clicked:", product);
+              // TODO: Navigate to product details or open modal
+            }}
+          />
         </div>
 
         <div className="card">
