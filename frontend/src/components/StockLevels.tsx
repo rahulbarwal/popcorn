@@ -120,13 +120,23 @@ const SortableHeader: React.FC<{
   const isActive = sortConfig?.field === field;
   const isAsc = isActive && sortConfig?.order === "asc";
 
+  const getSortAriaLabel = () => {
+    if (isActive) {
+      return `${label}, currently sorted ${
+        isAsc ? "ascending" : "descending"
+      }. Click to sort ${isAsc ? "descending" : "ascending"}.`;
+    }
+    return `${label}, not sorted. Click to sort ascending.`;
+  };
+
   return (
     <button
       onClick={() => onSort(field)}
-      className="flex items-center gap-1 text-left font-medium text-gray-900 hover:text-blue-600 transition-colors"
+      className="flex items-center gap-1 text-left font-medium text-gray-900 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+      aria-label={getSortAriaLabel()}
     >
       {label}
-      <div className="flex flex-col">
+      <div className="flex flex-col" aria-hidden="true">
         <ChevronUp
           className={`h-3 w-3 ${
             isActive && isAsc ? "text-blue-600" : "text-gray-400"
@@ -270,7 +280,10 @@ const StockLevels: React.FC<StockLevelsProps> = ({
   const hasProducts = products.length > 0;
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <section
+      className={`space-y-4 ${className}`}
+      aria-labelledby="stock-levels-heading"
+    >
       {/* Header with search and filters */}
       {(showSearch || showFilters) && (
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -278,55 +291,95 @@ const StockLevels: React.FC<StockLevelsProps> = ({
             {/* Search input */}
             {showSearch && (
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <label htmlFor="stock-search" className="sr-only">
+                  Search products by SKU or name
+                </label>
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                  aria-hidden="true"
+                />
                 <input
+                  id="stock-search"
                   type="text"
                   placeholder="Search by SKU or product name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  aria-describedby="search-help"
                 />
+                <div id="search-help" className="sr-only">
+                  Enter product name or SKU to filter the stock levels table
+                </div>
               </div>
             )}
 
             {/* Filters */}
             {showFilters && (
-              <div className="flex gap-3">
+              <div
+                className="flex gap-3"
+                role="group"
+                aria-label="Stock filters"
+              >
                 {/* Category filter */}
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                  <option value="">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label htmlFor="category-filter" className="sr-only">
+                    Filter by category
+                  </label>
+                  <select
+                    id="category-filter"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    aria-describedby="category-filter-help"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <div id="category-filter-help" className="sr-only">
+                    Filter products by their category
+                  </div>
+                </div>
 
                 {/* Stock status filter */}
-                <select
-                  value={stockFilter}
-                  onChange={(e) =>
-                    setStockFilter(
-                      e.target.value as "all" | "low_stock" | "out_of_stock"
-                    )
-                  }
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                  <option value="all">All Stock</option>
-                  <option value="low_stock">Low Stock</option>
-                  <option value="out_of_stock">Out of Stock</option>
-                </select>
+                <div>
+                  <label htmlFor="stock-status-filter" className="sr-only">
+                    Filter by stock status
+                  </label>
+                  <select
+                    id="stock-status-filter"
+                    value={stockFilter}
+                    onChange={(e) =>
+                      setStockFilter(
+                        e.target.value as "all" | "low_stock" | "out_of_stock"
+                      )
+                    }
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    aria-describedby="stock-status-filter-help"
+                  >
+                    <option value="all">All Stock</option>
+                    <option value="low_stock">Low Stock</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                  </select>
+                  <div id="stock-status-filter-help" className="sr-only">
+                    Filter products by their current stock status
+                  </div>
+                </div>
 
                 {/* Advanced filters toggle */}
                 <button
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  aria-expanded={showAdvancedFilters}
+                  aria-controls="advanced-filters"
+                  aria-label={`${
+                    showAdvancedFilters ? "Hide" : "Show"
+                  } advanced filters`}
                 >
-                  <Filter className="h-4 w-4" />
+                  <Filter className="h-4 w-4" aria-hidden="true" />
                   Advanced
                 </button>
               </div>
@@ -337,21 +390,35 @@ const StockLevels: React.FC<StockLevelsProps> = ({
           <button
             onClick={() => refetch()}
             disabled={isRefetching}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label={
+              isRefetching
+                ? "Refreshing stock levels..."
+                : "Refresh stock levels"
+            }
             title="Refresh stock levels"
           >
             <RefreshCw
               className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+              aria-hidden="true"
             />
-            Refresh
+            <span className="sr-only sm:not-sr-only">Refresh</span>
           </button>
         </div>
       )}
 
       {/* Advanced filters */}
       {showAdvancedFilters && showFilters && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">
+        <div
+          id="advanced-filters"
+          className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+          role="region"
+          aria-labelledby="advanced-filters-heading"
+        >
+          <h4
+            id="advanced-filters-heading"
+            className="text-sm font-medium text-gray-900 mb-3"
+          >
             Advanced Filters
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -430,13 +497,38 @@ const StockLevels: React.FC<StockLevelsProps> = ({
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Desktop table */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
+                <table
+                  className="w-full"
+                  role="table"
+                  aria-label="Stock levels table"
+                  aria-describedby="stock-levels-heading"
+                >
+                  <caption className="sr-only">
+                    Stock levels for {products.length} products.
+                    {sortConfig &&
+                      `Sorted by ${sortConfig.field} in ${sortConfig.order}ending order.`}
+                    Use arrow keys to navigate and Enter to sort columns.
+                  </caption>
                   <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <tr role="row">
+                      <th
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        scope="col"
+                        id="product-header"
+                      >
                         Product
                       </th>
-                      <th className="px-6 py-3 text-left">
+                      <th
+                        className="px-6 py-3 text-left"
+                        scope="col"
+                        aria-sort={
+                          sortConfig?.field === "sku"
+                            ? sortConfig.order === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                      >
                         <SortableHeader
                           field="sku"
                           label="SKU"
@@ -444,7 +536,17 @@ const StockLevels: React.FC<StockLevelsProps> = ({
                           onSort={handleSort}
                         />
                       </th>
-                      <th className="px-6 py-3 text-left">
+                      <th
+                        className="px-6 py-3 text-left"
+                        scope="col"
+                        aria-sort={
+                          sortConfig?.field === "category"
+                            ? sortConfig.order === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                      >
                         <SortableHeader
                           field="category"
                           label="Category"
@@ -452,7 +554,17 @@ const StockLevels: React.FC<StockLevelsProps> = ({
                           onSort={handleSort}
                         />
                       </th>
-                      <th className="px-6 py-3 text-left">
+                      <th
+                        className="px-6 py-3 text-left"
+                        scope="col"
+                        aria-sort={
+                          sortConfig?.field === "total_quantity"
+                            ? sortConfig.order === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                      >
                         <SortableHeader
                           field="total_quantity"
                           label="Quantity"
@@ -460,10 +572,24 @@ const StockLevels: React.FC<StockLevelsProps> = ({
                           onSort={handleSort}
                         />
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        scope="col"
+                        id="value-header"
+                      >
                         Value
                       </th>
-                      <th className="px-6 py-3 text-left">
+                      <th
+                        className="px-6 py-3 text-left"
+                        scope="col"
+                        aria-sort={
+                          sortConfig?.field === "stock_status"
+                            ? sortConfig.order === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                      >
                         <SortableHeader
                           field="stock_status"
                           label="Status"
@@ -471,17 +597,23 @@ const StockLevels: React.FC<StockLevelsProps> = ({
                           onSort={handleSort}
                         />
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        scope="col"
+                        id="locations-header"
+                      >
                         Locations
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {products.map((product) => (
+                    {products.map((product, index) => (
                       <tr
                         key={product.id}
                         className={`hover:bg-gray-50 transition-colors ${
-                          onProductClick ? "cursor-pointer" : ""
+                          onProductClick
+                            ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                            : ""
                         } ${
                           product.stock_status === "out_of_stock"
                             ? "bg-red-50"
@@ -490,8 +622,29 @@ const StockLevels: React.FC<StockLevelsProps> = ({
                             : ""
                         }`}
                         onClick={() => onProductClick?.(product)}
+                        role={onProductClick ? "button" : "row"}
+                        tabIndex={onProductClick ? 0 : undefined}
+                        aria-label={
+                          onProductClick
+                            ? `View details for ${product.name}`
+                            : undefined
+                        }
+                        aria-rowindex={index + 2} // +2 because header is row 1
+                        onKeyDown={
+                          onProductClick
+                            ? (e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  onProductClick(product);
+                                }
+                              }
+                            : undefined
+                        }
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap"
+                          headers="product-header"
+                        >
                           <div className="flex items-center gap-3">
                             <ProductImage product={product} />
                             <div className="min-w-0 flex-1">
@@ -508,17 +661,43 @@ const StockLevels: React.FC<StockLevelsProps> = ({
                           {product.category}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {formatNumber(product.total_quantity)}
+                          <span
+                            aria-label={`Quantity: ${formatNumber(
+                              product.total_quantity
+                            )} units`}
+                          >
+                            {formatNumber(product.total_quantity)}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(product.total_value)}
+                        <td
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                          headers="value-header"
+                        >
+                          <span
+                            aria-label={`Value: ${formatCurrency(
+                              product.total_value
+                            )}`}
+                          >
+                            {formatCurrency(product.total_value)}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StockStatusBadge product={product} />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {product.warehouse_count} location
-                          {product.warehouse_count !== 1 ? "s" : ""}
+                        <td
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                          headers="locations-header"
+                        >
+                          <span
+                            aria-label={`Available in ${
+                              product.warehouse_count
+                            } warehouse${
+                              product.warehouse_count !== 1 ? "s" : ""
+                            }`}
+                          >
+                            {product.warehouse_count} location
+                            {product.warehouse_count !== 1 ? "s" : ""}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -527,11 +706,19 @@ const StockLevels: React.FC<StockLevelsProps> = ({
               </div>
 
               {/* Mobile cards */}
-              <div className="md:hidden divide-y divide-gray-200">
-                {products.map((product) => (
+              <div
+                className="md:hidden divide-y divide-gray-200"
+                role="list"
+                aria-label="Stock levels"
+              >
+                {products.map((product, index) => (
                   <div
                     key={product.id}
-                    className={`p-4 ${onProductClick ? "cursor-pointer" : ""} ${
+                    className={`p-4 ${
+                      onProductClick
+                        ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                        : ""
+                    } ${
                       product.stock_status === "out_of_stock"
                         ? "bg-red-50"
                         : product.stock_status === "low_stock"
@@ -539,6 +726,23 @@ const StockLevels: React.FC<StockLevelsProps> = ({
                         : "hover:bg-gray-50"
                     } transition-colors`}
                     onClick={() => onProductClick?.(product)}
+                    role={onProductClick ? "button" : "listitem"}
+                    tabIndex={onProductClick ? 0 : undefined}
+                    aria-label={
+                      onProductClick
+                        ? `View details for ${product.name}`
+                        : `Product ${index + 1}: ${product.name}`
+                    }
+                    onKeyDown={
+                      onProductClick
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onProductClick(product);
+                            }
+                          }
+                        : undefined
+                    }
                   >
                     <div className="flex items-start gap-3">
                       <ProductImage product={product} />
@@ -633,7 +837,17 @@ const StockLevels: React.FC<StockLevelsProps> = ({
           )}
         </>
       )}
-    </div>
+
+      {/* Live region for status updates */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading && "Loading stock levels..."}
+        {error && `Error loading stock levels: ${error.message}`}
+        {!isLoading &&
+          !error &&
+          hasProducts &&
+          `Showing ${products.length} products`}
+      </div>
+    </section>
   );
 };
 

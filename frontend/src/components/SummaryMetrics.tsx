@@ -60,17 +60,36 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   const styles = getStatusStyles();
+  const cardId = `metric-card-${title.toLowerCase().replace(/\s+/g, "-")}`;
+
+  // Generate accessible description
+  const getAriaLabel = () => {
+    if (loading) return `${title} metric is loading`;
+    if (error) return `${title} metric failed to load: ${error}`;
+
+    let label = `${title}: ${value}`;
+    if (subtitle) label += `, ${subtitle}`;
+    if (status === "critical") label += ", critical status";
+    else if (status === "warning") label += ", warning status";
+    if (onClick) label += ", click to view details";
+
+    return label;
+  };
 
   return (
     <div
+      id={cardId}
       className={`card transition-all duration-200 hover:shadow-lg hover:shadow-gray-200/50 ${
         onClick ? "cursor-pointer hover:scale-[1.02] active:scale-[0.98]" : ""
       } ${styles.bgColor} ${
         styles.borderColor
       } border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
       onClick={onClick}
-      role={onClick ? "button" : undefined}
+      role={onClick ? "button" : "region"}
       tabIndex={onClick ? 0 : undefined}
+      aria-label={getAriaLabel()}
+      aria-describedby={subtitle ? `${cardId}-subtitle` : undefined}
+      aria-live={loading ? "polite" : undefined}
       onKeyDown={
         onClick
           ? (e) => {
@@ -83,7 +102,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
       }
     >
       <div className="flex items-center">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0" aria-hidden="true">
           <div className={`${styles.iconColor}`}>{icon}</div>
         </div>
         <div className="ml-3 sm:ml-4 flex-1 min-w-0">
@@ -91,15 +110,24 @@ const MetricCard: React.FC<MetricCardProps> = ({
             {title}
           </h3>
           {loading ? (
-            <div className="flex items-center mt-1">
+            <div
+              className="flex items-center mt-1"
+              role="status"
+              aria-live="polite"
+            >
               <LoadingSpinner size="sm" />
               <span className="ml-2 text-xs sm:text-sm text-gray-500">
                 Loading...
               </span>
             </div>
           ) : error ? (
-            <div className="mt-1">
-              <p className="text-xl sm:text-2xl font-bold text-red-600">-</p>
+            <div className="mt-1" role="alert">
+              <p
+                className="text-xl sm:text-2xl font-bold text-red-600"
+                aria-label="Error"
+              >
+                -
+              </p>
               <p className="text-xs sm:text-sm text-red-500 truncate">
                 {error}
               </p>
@@ -108,11 +136,15 @@ const MetricCard: React.FC<MetricCardProps> = ({
             <div className="mt-1">
               <p
                 className={`text-xl sm:text-2xl font-bold ${styles.textColor} truncate`}
+                aria-label={`${title} value: ${value}`}
               >
                 {value}
               </p>
               {subtitle && (
-                <p className="text-xs sm:text-sm text-gray-500 truncate">
+                <p
+                  id={`${cardId}-subtitle`}
+                  className="text-xs sm:text-sm text-gray-500 truncate"
+                >
                   {subtitle}
                 </p>
               )}
@@ -214,25 +246,38 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   const metrics = metricsData?.metrics;
 
   return (
-    <div className="space-y-4">
+    <section className="space-y-4" aria-labelledby="summary-metrics-heading">
       {/* Header with refresh button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Summary Metrics</h2>
+        <h2
+          id="summary-metrics-heading"
+          className="text-lg font-semibold text-gray-900"
+        >
+          Summary Metrics
+        </h2>
         <button
           onClick={() => refetch()}
           disabled={isRefetching}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          aria-label={
+            isRefetching ? "Refreshing metrics..." : "Refresh metrics"
+          }
           title="Refresh metrics"
         >
           <RefreshCw
             className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+            aria-hidden="true"
           />
-          Refresh
+          <span className="sr-only sm:not-sr-only">Refresh</span>
         </button>
       </div>
 
       {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6"
+        role="group"
+        aria-label="Inventory metrics"
+      >
         <MetricCard
           title="Total Products"
           value={
@@ -315,25 +360,43 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
 
       {/* Last Updated Info */}
       {metricsData?.last_updated && (
-        <div className="text-xs text-gray-500 text-center">
+        <div
+          className="text-xs text-gray-500 text-center"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="sr-only">Metrics last updated: </span>
           Last updated: {new Date(metricsData.last_updated).toLocaleString()}
         </div>
       )}
 
       {/* Warehouse Filter Info */}
       {metricsData?.warehouse_filter && (
-        <div className="text-xs text-gray-600 text-center bg-blue-50 px-3 py-2 rounded-md">
+        <div
+          className="text-xs text-gray-600 text-center bg-blue-50 px-3 py-2 rounded-md"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="sr-only">Current filter: </span>
           Showing metrics for: {metricsData.warehouse_filter.name}
         </div>
       )}
 
       {/* Navigation Hint */}
       {enableNavigation && !isLoading && !error && (
-        <div className="text-xs text-gray-400 text-center">
+        <div className="text-xs text-gray-400 text-center" role="note">
+          <span className="sr-only">Tip: </span>
           Click on any metric card to view detailed information
         </div>
       )}
-    </div>
+
+      {/* Always present live region for status updates */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading && "Loading metrics..."}
+        {error && `Error loading metrics: ${error.message}`}
+        {!isLoading && !error && "Metrics loaded successfully"}
+      </div>
+    </section>
   );
 };
 

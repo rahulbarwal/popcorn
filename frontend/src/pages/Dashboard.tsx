@@ -29,31 +29,35 @@ const Dashboard = () => {
     <div>
       <Breadcrumb items={breadcrumbItems} />
 
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <div className="flex-responsive mb-6">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+            Dashboard
+          </h1>
           {!isAllWarehouses && selectedWarehouse && (
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-gray-600 mt-1 truncate">
               Showing data for:{" "}
               <span className="font-medium">{selectedWarehouse.name}</span>
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="sm:hidden">
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="md:hidden">
             <WarehouseFilter size="sm" showLabel={false} />
           </div>
           <button
             onClick={testNotification}
-            className="btn btn-secondary text-sm"
+            className="btn btn-secondary btn-sm"
+            aria-label="Test notification system"
           >
-            Test Notification
+            <span className="hidden sm:inline">Test Notification</span>
+            <span className="sm:hidden">Test</span>
           </button>
         </div>
       </div>
 
       {/* Summary Metrics */}
-      <div className="mb-8">
+      <div className="space-responsive">
         <SummaryMetrics
           onMetricClick={(metric) => {
             const warehouseId = isAllWarehouses
@@ -67,7 +71,7 @@ const Dashboard = () => {
       </div>
 
       {/* Dashboard Content Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Stock Levels
@@ -88,11 +92,11 @@ const Dashboard = () => {
               console.log("Supplier clicked:", supplierId);
               // TODO: Navigate to supplier details or open modal
             }}
-            showHeader={false}
+            showHeader={true}
           />
         </div>
 
-        <div className="card">
+        <div className="card xl:col-span-1">
           <WarehouseDistribution
             maxItems={3}
             onWarehouseClick={(warehouseId) => {
@@ -106,22 +110,22 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="card">
+        <div className="card xl:col-span-1">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Stock Visualization
           </h2>
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-8 min-h-[200px]">
             <LoadingSpinner text="Stock visualization component will be implemented in task 19" />
           </div>
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="space-responsive">
         <div className="card">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             ✅ Frontend Foundation Complete
           </h2>
-          <div className="space-y-2 text-gray-600">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600">
             <p>• React application with TypeScript configured</p>
             <p>• React Router for navigation</p>
             <p>• Context API for global state management</p>

@@ -207,8 +207,8 @@
   - Write component tests for warehouse distribution functionality
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 14. Implement responsive design and mobile optimization
-- [ ] 14.1 Create responsive layouts for all components
+- [x] 14. Implement responsive design and mobile optimization
+- [x] 14.1 Create responsive layouts for all components
 
   - Implement CSS Grid and Flexbox layouts for responsive design
   - Create mobile-optimized navigation and component layouts
@@ -216,7 +216,7 @@
   - Test responsive behavior across different screen sizes
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 14.2 Add accessibility features
+- [x] 14.2 Add accessibility features
 
   - Implement ARIA labels and semantic HTML structure
   - Add keyboard navigation support for all interactive elements
