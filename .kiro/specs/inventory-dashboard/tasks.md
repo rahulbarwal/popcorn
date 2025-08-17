@@ -190,8 +190,8 @@
   - Write component tests for recent purchases functionality
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 13. Build warehouse distribution frontend component
-- [ ] 13.1 Create location-based inventory display
+- [x] 13. Build warehouse distribution frontend component
+- [x] 13.1 Create location-based inventory display
 
   - Build warehouse filtering dropdown with location selection
   - Implement quantity breakdown display by warehouse location
@@ -199,7 +199,7 @@
   - Add visual indicators for stock distribution imbalances
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 13.2 Add distribution analysis features
+- [x] 13.2 Add distribution analysis features
 
   - Implement transfer suggestion indicators
   - Create location comparison views

@@ -5,6 +5,7 @@ import WarehouseFilter from "../components/WarehouseFilter";
 import SummaryMetrics from "../components/SummaryMetrics";
 import StockLevels from "../components/StockLevels";
 import RecentPurchases from "../components/RecentPurchases";
+import WarehouseDistribution from "../components/WarehouseDistribution";
 import { useNotifications } from "../contexts/AppContext";
 import { useSelectedWarehouse } from "../contexts/WarehouseFilterContext";
 import { navigateToMetricDetails } from "../utils/navigation";
@@ -92,12 +93,17 @@ const Dashboard = () => {
         </div>
 
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Warehouse Distribution
-          </h2>
-          <div className="flex items-center justify-center py-8">
-            <LoadingSpinner text="Warehouse distribution component will be implemented in task 13" />
-          </div>
+          <WarehouseDistribution
+            maxItems={3}
+            onWarehouseClick={(warehouseId) => {
+              console.log("Warehouse clicked:", warehouseId);
+              // TODO: Navigate to warehouse details or apply warehouse filter
+            }}
+            onProductClick={(productId) => {
+              console.log("Product clicked:", productId);
+              // TODO: Navigate to product details or open modal
+            }}
+          />
         </div>
 
         <div className="card">
