@@ -4,6 +4,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import WarehouseFilter from "../components/WarehouseFilter";
 import SummaryMetrics from "../components/SummaryMetrics";
 import StockLevels from "../components/StockLevels";
+import RecentPurchases from "../components/RecentPurchases";
 import { useNotifications } from "../contexts/AppContext";
 import { useSelectedWarehouse } from "../contexts/WarehouseFilterContext";
 import { navigateToMetricDetails } from "../utils/navigation";
@@ -80,12 +81,14 @@ const Dashboard = () => {
         </div>
 
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Recent Purchases
-          </h2>
-          <div className="flex items-center justify-center py-8">
-            <LoadingSpinner text="Recent purchases component will be implemented in task 12" />
-          </div>
+          <RecentPurchases
+            maxItems={5}
+            onSupplierClick={(supplierId) => {
+              console.log("Supplier clicked:", supplierId);
+              // TODO: Navigate to supplier details or open modal
+            }}
+            showHeader={false}
+          />
         </div>
 
         <div className="card">

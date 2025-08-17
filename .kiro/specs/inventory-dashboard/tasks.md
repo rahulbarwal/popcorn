@@ -173,8 +173,8 @@
   - Write component tests for stock levels functionality
   - _Requirements: 1.1, 1.2, 5.2, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
 
-- [ ] 12. Build recent purchases frontend component
-- [ ] 12.1 Create purchase orders list component
+- [x] 12. Build recent purchases frontend component
+- [x] 12.1 Create purchase orders list component
 
   - Build chronological list component for recent purchase orders
   - Implement status badges with color coding for order statuses
@@ -182,7 +182,7 @@
   - Create order date formatting and product count display
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 12.2 Add purchase order details and interactions
+- [x] 12.2 Add purchase order details and interactions
 
   - Implement expandable order details with product breakdown
   - Add auto-refresh functionality for real-time status updates
