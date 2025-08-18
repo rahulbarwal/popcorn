@@ -70,6 +70,19 @@ export interface Product {
   updated_at: string;
 }
 
+export interface ProductDetail extends Product {
+  suppliers?: Supplier[];
+  recent_purchases?: PurchaseOrder[];
+  variants?: ProductVariant[];
+}
+
+export interface ProductVariant {
+  id: number;
+  variant_name: string;
+  variant_sku: string;
+  attributes: Record<string, any>;
+}
+
 export interface ProductLocation {
   location_id: number;
   location_name: string;

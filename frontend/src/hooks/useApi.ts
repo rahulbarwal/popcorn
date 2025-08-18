@@ -19,6 +19,7 @@ import {
   StockVisualizationResponse,
   ReorderSuggestionsResponse,
   Product,
+  ProductDetail,
   PurchaseOrder,
   Supplier,
   Warehouse,
@@ -197,7 +198,7 @@ export const useProduct = (id: number) => {
 
   return useQuery({
     queryKey: queryKeys.product(id),
-    queryFn: () => api.get<Product>(`/api/products/${id}`),
+    queryFn: () => api.get<ProductDetail>(`/api/products/${id}`),
     onError: (error: ApiError) => {
       setComponentError("product", error.message);
     },

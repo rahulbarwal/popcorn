@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Breadcrumb from "../components/Breadcrumb";
 import ProductsTable from "../components/ProductsTable";
 import ProductSearchAndFilters from "../components/ProductSearchAndFilters";
+import ProductDetailModal from "../components/ProductDetailModal";
 import { Plus } from "lucide-react";
 import { Product, SearchFilters } from "../types/api";
 
@@ -9,6 +10,7 @@ const Products = () => {
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showProductDetail, setShowProductDetail] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
 
   const breadcrumbItems = [
@@ -22,12 +24,8 @@ const Products = () => {
   };
 
   const handleViewProduct = (product: Product) => {
-    // TODO: Implement in task 23
-    console.log(
-      "View Product clicked:",
-      product.name,
-      "- will be implemented in task 23"
-    );
+    setSelectedProduct(product);
+    setShowProductDetail(true);
   };
 
   const handleDeleteProduct = (product: Product) => {
@@ -48,6 +46,11 @@ const Products = () => {
   const handleProductSelect = (product: Product) => {
     // When a product is selected from search suggestions, view it
     handleViewProduct(product);
+  };
+
+  const handleCloseProductDetail = () => {
+    setShowProductDetail(false);
+    setSelectedProduct(null);
   };
 
   return (
@@ -123,15 +126,22 @@ const Products = () => {
             role="list"
             aria-label="Upcoming product management features"
           >
-            <li>• Product table with sorting and pagination (Task 21)</li>
-            <li>• Search and filtering functionality (Task 22)</li>
-            <li>• Product detail modal (Task 23)</li>
+            <li>• Product table with sorting and pagination (Task 21) ✓</li>
+            <li>• Search and filtering functionality (Task 22) ✓</li>
+            <li>• Product detail modal (Task 23) ✓</li>
             <li>• Add/Edit product form (Task 24)</li>
             <li>• Product deletion with confirmation (Task 26)</li>
             <li>• Supplier integration (Task 27)</li>
           </ul>
         </div>
       </section>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        productId={selectedProduct?.id || null}
+        isOpen={showProductDetail}
+        onClose={handleCloseProductDetail}
+      />
     </main>
   );
 };
