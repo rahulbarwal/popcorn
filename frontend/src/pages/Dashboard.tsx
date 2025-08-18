@@ -6,6 +6,7 @@ import SummaryMetrics from "../components/SummaryMetrics";
 import StockLevels from "../components/StockLevels";
 import RecentPurchases from "../components/RecentPurchases";
 import WarehouseDistribution from "../components/WarehouseDistribution";
+import StockVisualization from "../components/StockVisualization";
 import { useNotifications } from "../contexts/AppContext";
 import { useSelectedWarehouse } from "../contexts/WarehouseFilterContext";
 import { navigateToMetricDetails } from "../utils/navigation";
@@ -111,12 +112,7 @@ const Dashboard = () => {
         </div>
 
         <div className="card xl:col-span-1">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Stock Visualization
-          </h2>
-          <div className="flex items-center justify-center py-8 min-h-[200px]">
-            <LoadingSpinner text="Stock visualization component will be implemented in task 19" />
-          </div>
+          <StockVisualization height={300} />
         </div>
       </div>
 
