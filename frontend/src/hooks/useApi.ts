@@ -245,6 +245,20 @@ export const useFilterOptions = () => {
   });
 };
 
+export const useCategories = () => {
+  const { setComponentError } = useErrors();
+
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: () =>
+      api.get<{ categories: string[] }>("/api/products/categories"),
+    onError: (error: ApiError) => {
+      setComponentError("categories", error.message);
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
 // Mutation Hooks
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();

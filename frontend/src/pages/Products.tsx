@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import Breadcrumb from "../components/Breadcrumb";
 import ProductsTable from "../components/ProductsTable";
-import { Plus, Search, Filter } from "lucide-react";
-import { Product } from "../types/api";
+import ProductSearchAndFilters from "../components/ProductSearchAndFilters";
+import { Plus } from "lucide-react";
+import { Product, SearchFilters } from "../types/api";
 
 const Products = () => {
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
 
   const breadcrumbItems = [
     { label: "Dashboard", href: "/" },
@@ -37,6 +39,15 @@ const Products = () => {
       product.name,
       "- will be implemented in task 26"
     );
+  };
+
+  const handleFiltersChange = (filters: SearchFilters) => {
+    setSearchFilters(filters);
+  };
+
+  const handleProductSelect = (product: Product) => {
+    // When a product is selected from search suggestions, view it
+    handleViewProduct(product);
   };
 
   return (
@@ -77,61 +88,11 @@ const Products = () => {
         <h2 id="search-filters-heading" className="sr-only">
           Search and Filter Products
         </h2>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <label htmlFor="product-search" className="sr-only">
-              Search products by name, SKU, or category
-            </label>
-            <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4"
-                aria-hidden="true"
-              />
-              <input
-                id="product-search"
-                type="text"
-                placeholder="Search products by name, SKU, or category..."
-                className="form-input pl-10"
-                disabled
-                aria-describedby="search-help"
-              />
-            </div>
-            <p id="search-help" className="sr-only">
-              Search functionality will be implemented in task 22. Enter product
-              name, SKU, or category to filter results.
-            </p>
-          </div>
-          <div
-            className="flex flex-col sm:flex-row gap-2 lg:flex-shrink-0"
-            role="group"
-            aria-label="Filter options"
-          >
-            <button
-              className="btn btn-outline w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              disabled
-              aria-label="Filter products by category (coming soon)"
-              aria-describedby="category-filter-help"
-            >
-              <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
-              Category
-            </button>
-            <div id="category-filter-help" className="sr-only">
-              Category filtering will be available in task 22
-            </div>
-            <button
-              className="btn btn-outline w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              disabled
-              aria-label="Filter products by stock status (coming soon)"
-              aria-describedby="stock-filter-help"
-            >
-              <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
-              Stock Status
-            </button>
-            <div id="stock-filter-help" className="sr-only">
-              Stock status filtering will be available in task 22
-            </div>
-          </div>
-        </div>
+        <ProductSearchAndFilters
+          onFiltersChange={handleFiltersChange}
+          onProductSelect={handleProductSelect}
+          showFilters={true}
+        />
       </section>
 
       {/* Products Table */}
@@ -142,6 +103,7 @@ const Products = () => {
         <ProductsTable
           onViewProduct={handleViewProduct}
           onDeleteProduct={handleDeleteProduct}
+          searchFilters={searchFilters}
         />
       </section>
 

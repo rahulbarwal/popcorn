@@ -328,7 +328,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                 >
                   <div className="w-12 h-12 flex-shrink-0">
                     <OptimizedImage
-                      src={product.image_url}
+                      src={product.image_url || ""}
                       alt={`${product.name} product image`}
                       className="w-12 h-12 rounded-lg object-cover border border-gray-200"
                       fallbackClassName="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200"
