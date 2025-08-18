@@ -1,0 +1,858 @@
+openapi: 3.0.3
+info:
+  title: Inventory Dashboard API
+  description: |
+    A comprehensive REST API for managing inventory, tracking stock levels, 
+    monitoring purchase orders, and analyzing warehouse distribution across multiple locations.
+    
+    ## Features
+    - Real-time inventory tracking
+    - Multi-warehouse support
+    - Purchase order management
+    - Supplier relationship tracking
+    - Performance analytics and reporting
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@inventory-dashboard.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api
+    description: Development server
+  - url: https://api.inventory-dashboard.com/api
+    description: Production server
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health Check
+      summary: Health check endpoint
+      description: Returns the health status of the API and database connection
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  database:
+                    type: string
+                    enum: [connected, disconnected]
+                  uptime:
+                    type: number
+                    description: Server uptime in seconds
+                  memory:
+                    type: object
+                    properties:
+                      rss:
+                        type: string
+                      heapTotal:
+                        type: string
+                      heapUsed:
+                        type: string
+                  environment:
+                    type: string
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dashboard/summary-metrics:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard summary metrics
+      description: |
+        Returns key inventory statistics including total products, low stock count, 
+        out of stock count, supplier count, and total stock value.
+      parameters:
+        - name: warehouse_id
+          in: query
+          description: Filter metrics by specific warehouse
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Summary metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      metrics:
+                        $ref: '#/components/schemas/SummaryMetrics'
+                      warehouse_filter:
+                        $ref: '#/components/schemas/WarehouseFilter'
+                      last_updated:
+                        type: string
+                        format: date-time
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dashboard/stock-levels:
+    get:
+      tags:
+        - Dashboard
+      summary: Get stock levels with filtering and pagination
+      description: |
+        Returns product inventory levels with support for filtering by warehouse, 
+        stock status, search terms, and categories. Includes pagination support.
+      parameters:
+        - name: warehouse_id
+          in: query
+          description: Filter by specific warehouse
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: stock_filter
+          in: query
+          description: Filter by stock status
+          required: false
+          schema:
+            type: string
+            enum: [all, low_stock, out_of_stock]
+            default: all
+        - name: search
+          in: query
+          description: Search by product name, SKU, or category
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+        - name: category
+          in: query
+          description: Filter by product category
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Stock levels retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      products:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProductStockLevel'
+                      filters:
+                        $ref: '#/components/schemas/StockLevelFilters'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationInfo'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dashboard/recent-purchases:
+    get:
+      tags:
+        - Dashboard
+      summary: Get recent purchase orders
+      description: |
+        Returns recent purchase orders with supplier information, 
+        sorted by order date in descending order.
+      parameters:
+        - name: warehouse_id
+          in: query
+          description: Filter by specific warehouse
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: supplier_id
+          in: query
+          description: Filter by specific supplier
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: status
+          in: query
+          description: Filter by order status
+          required: false
+          schema:
+            type: string
+            enum: [pending, confirmed, shipped, delivered, cancelled]
+        - name: date_from
+          in: query
+          description: Filter orders from this date (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          description: Filter orders to this date (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          description: Number of orders to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Recent purchases retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      recent_orders:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PurchaseOrder'
+                      filters:
+                        $ref: '#/components/schemas/PurchaseOrderFilters'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dashboard/warehouse-distribution:
+    get:
+      tags:
+        - Dashboard
+      summary: Get inventory distribution across warehouses
+      description: |
+        Returns inventory distribution data showing how products are 
+        distributed across different warehouse locations.
+      parameters:
+        - name: warehouse_id
+          in: query
+          description: Filter by specific warehouse
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: product_id
+          in: query
+          description: Filter by specific product
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: category
+          in: query
+          description: Filter by product category
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: min_value
+          in: query
+          description: Filter products with minimum total value
+          required: false
+          schema:
+            type: number
+            minimum: 0
+      responses:
+        '200':
+          description: Warehouse distribution retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      distribution:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WarehouseDistribution'
+                      filters:
+                        $ref: '#/components/schemas/WarehouseDistributionFilters'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /suppliers:
+    get:
+      tags:
+        - Suppliers
+      summary: Get all suppliers
+      description: |
+        Returns a list of all suppliers with detailed information including 
+        contact details and performance metrics.
+      parameters:
+        - name: include_inactive
+          in: query
+          description: Include inactive suppliers
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: search
+          in: query
+          description: Search by supplier name, contact, or email
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+        - name: limit
+          in: query
+          description: Limit number of results
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Suppliers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      suppliers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Supplier'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /suppliers/{id}:
+    get:
+      tags:
+        - Suppliers
+      summary: Get supplier by ID
+      description: Returns detailed information for a specific supplier
+      parameters:
+        - name: id
+          in: path
+          description: Supplier ID
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Supplier retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      supplier:
+                        $ref: '#/components/schemas/SupplierDetail'
+        '404':
+          description: Supplier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid supplier ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /suppliers/by-products:
+    get:
+      tags:
+        - Suppliers
+      summary: Get suppliers for specific products
+      description: |
+        Returns suppliers that are associated with the specified products, 
+        useful for purchase order creation workflows.
+      parameters:
+        - name: product_ids
+          in: query
+          description: Comma-separated list of product IDs
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]+(,[0-9]+)*$'
+          example: "1,2,3"
+      responses:
+        '200':
+          description: Suppliers for products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      suppliers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SupplierWithProducts'
+                      product_ids:
+                        type: array
+                        items:
+                          type: integer
+        '400':
+          description: Invalid or missing product_ids parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: Additional error details (optional)
+
+    SummaryMetrics:
+      type: object
+      properties:
+        total_products:
+          $ref: '#/components/schemas/Metric'
+        low_stock:
+          allOf:
+            - $ref: '#/components/schemas/Metric'
+            - type: object
+              properties:
+                threshold:
+                  type: integer
+                  description: Low stock threshold
+        out_of_stock:
+          $ref: '#/components/schemas/Metric'
+        suppliers:
+          $ref: '#/components/schemas/Metric'
+        total_stock_value:
+          allOf:
+            - $ref: '#/components/schemas/Metric'
+            - type: object
+              properties:
+                currency:
+                  type: string
+                  example: "USD"
+                excluded_products:
+                  type: integer
+                  description: Number of products excluded from calculation
+
+    Metric:
+      type: object
+      properties:
+        value:
+          type: number
+          description: Metric value
+        status:
+          type: string
+          enum: [normal, warning, critical]
+          description: Status indicator based on thresholds
+
+    WarehouseFilter:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    ProductStockLevel:
+      type: object
+      properties:
+        id:
+          type: integer
+        sku:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        image_url:
+          type: string
+          nullable: true
+        total_quantity:
+          type: integer
+          minimum: 0
+        unit_cost:
+          type: number
+          minimum: 0
+        total_value:
+          type: number
+          minimum: 0
+        low_stock:
+          type: boolean
+        out_of_stock:
+          type: boolean
+        reorder_point:
+          type: integer
+          minimum: 0
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductLocation'
+
+    ProductLocation:
+      type: object
+      properties:
+        location_id:
+          type: integer
+        location_name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 0
+        unit_cost:
+          type: number
+          minimum: 0
+
+    StockLevelFilters:
+      type: object
+      properties:
+        warehouse_id:
+          type: integer
+          nullable: true
+        stock_filter:
+          type: string
+          enum: [all, low_stock, out_of_stock]
+        search:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+        total_pages:
+          type: integer
+          minimum: 0
+
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+        po_number:
+          type: string
+        supplier:
+          $ref: '#/components/schemas/SupplierBasic'
+        order_date:
+          type: string
+          format: date
+        expected_delivery_date:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+        product_count:
+          type: integer
+          minimum: 0
+        total_amount:
+          type: number
+          minimum: 0
+        is_overdue:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+
+    PurchaseOrderFilters:
+      type: object
+      properties:
+        warehouse_id:
+          type: integer
+          nullable: true
+        supplier_id:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        date_from:
+          type: string
+          format: date
+          nullable: true
+        date_to:
+          type: string
+          format: date
+          nullable: true
+
+    WarehouseDistribution:
+      type: object
+      properties:
+        location_id:
+          type: integer
+        location_name:
+          type: string
+        location_address:
+          type: string
+        warehouse_type:
+          type: string
+        total_products:
+          type: integer
+          minimum: 0
+        total_quantity:
+          type: integer
+          minimum: 0
+        total_value:
+          type: number
+          minimum: 0
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/WarehouseProduct'
+
+    WarehouseProduct:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        sku:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        quantity:
+          type: integer
+          minimum: 0
+        unit_cost:
+          type: number
+          minimum: 0
+        total_value:
+          type: number
+          minimum: 0
+        reorder_point:
+          type: integer
+          minimum: 0
+        low_stock:
+          type: boolean
+
+    WarehouseDistributionFilters:
+      type: object
+      properties:
+        warehouse_id:
+          type: integer
+          nullable: true
+        product_id:
+          type: integer
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        min_value:
+          type: number
+          nullable: true
+
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        contact_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip_code:
+          type: string
+        supplier_type:
+          type: string
+        active:
+          type: boolean
+
+    SupplierBasic:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    SupplierDetail:
+      allOf:
+        - $ref: '#/components/schemas/Supplier'
+        - type: object
+          properties:
+            performance_metrics:
+              $ref: '#/components/schemas/SupplierPerformance'
+            recent_orders:
+              type: array
+              items:
+                $ref: '#/components/schemas/PurchaseOrder'
+
+    SupplierWithProducts:
+      allOf:
+        - $ref: '#/components/schemas/Supplier'
+        - type: object
+          properties:
+            products:
+              type: array
+              items:
+                type: integer
+              description: Array of product IDs associated with this supplier
+            last_order_date:
+              type: string
+              format: date
+              nullable: true
+            reliability_score:
+              type: number
+              minimum: 0
+              maximum: 1
+
+    SupplierPerformance:
+      type: object
+      properties:
+        total_orders:
+          type: integer
+          minimum: 0
+        on_time_deliveries:
+          type: integer
+          minimum: 0
+        average_delivery_days:
+          type: number
+          minimum: 0
+        performance_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        last_order_date:
+          type: string
+          format: date
+          nullable: true
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (if implemented)
+
+tags:
+  - name: Health Check
+    description: API health and status endpoints
+  - name: Dashboard
+    description: Dashboard data and analytics endpoints
+  - name: Suppliers
+    description: Supplier management and information endpoints
+
+externalDocs:
+  description: Find more info about the Inventory Dashboard API
+  url: https://docs.inventory-dashboard.com

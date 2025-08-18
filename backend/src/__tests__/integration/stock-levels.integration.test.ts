@@ -1,185 +1,272 @@
-import request from "supertest";
-import express from "express";
-import dashboardRoutes from "../../routes/dashboard";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  resetTestData,
+} from "../setup/testDatabase";
+import {
+  ApiTestHelpers,
+  ValidationHelpers,
+  PerformanceHelpers,
+} from "../setup/testHelpers";
 
-describe("Stock Levels API Integration", () => {
-  let app: express.Application;
+describe("Stock Levels API Integration Tests", () => {
+  // Setup and teardown
+  beforeAll(async () => {
+    await setupTestDatabase();
+  }, 30000);
 
-  beforeAll(() => {
-    app = express();
-    app.use(express.json());
-    app.use("/api/dashboard", dashboardRoutes);
-  });
+  afterAll(async () => {
+    await teardownTestDatabase();
+  }, 30000);
+
+  beforeEach(async () => {
+    await resetTestData();
+  }, 15000);
 
   describe("GET /api/dashboard/stock-levels", () => {
-    it("should respond with 200 status", async () => {
-      // This test will fail without a database connection, but validates the endpoint exists
-      const response = await request(app)
-        .get("/api/dashboard/stock-levels")
-        .expect((res) => {
-          // Should either return 200 with data or 500 with database error
-          expect([200, 500]).toContain(res.status);
-        });
+    it("should return stock levels with correct structure", async () => {
+      const response = await ApiTestHelpers.getStockLevels();
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
 
-      if (response.status === 200) {
-        expect(response.body).toHaveProperty("success", true);
-        expect(response.body).toHaveProperty("data");
-        expect(response.body.data).toHaveProperty("products");
-        expect(response.body.data).toHaveProperty("filters");
-        expect(Array.isArray(response.body.data.products)).toBe(true);
-      } else {
-        expect(response.body).toHaveProperty("success", false);
-        expect(response.body).toHaveProperty("error");
-      }
-    });
+      // Validate detailed product structure
+      if (response.body.data.products.length > 0) {
+        const product = response.body.data.products[0];
+        expect(product.image_url).toBeDefined();
+        expect(product.unit_cost).toBeGreaterThanOrEqual(0);
+        expect(product.total_value).toBeGreaterThanOrEqual(0);
 
-    it("should accept warehouse_id parameter", async () => {
-      const response = await request(app)
-        .get("/api/dashboard/stock-levels?warehouse_id=1")
-        .expect((res) => {
-          expect([200, 500]).toContain(res.status);
-        });
-
-      if (response.status === 200) {
-        expect(response.body.data.filters).toHaveProperty("warehouse_id", 1);
-      }
-    });
-
-    it("should accept stock_filter parameter", async () => {
-      const response = await request(app)
-        .get("/api/dashboard/stock-levels?stock_filter=low_stock")
-        .expect((res) => {
-          expect([200, 500]).toContain(res.status);
-        });
-
-      if (response.status === 200) {
-        expect(response.body.data.filters).toHaveProperty(
-          "stock_filter",
-          "low_stock"
-        );
-      }
-    });
-
-    it("should accept search parameter", async () => {
-      const response = await request(app)
-        .get("/api/dashboard/stock-levels?search=test")
-        .expect((res) => {
-          expect([200, 500]).toContain(res.status);
-        });
-
-      if (response.status === 200) {
-        expect(response.body.data.filters).toHaveProperty("search", "test");
-      }
-    });
-
-    it("should accept category parameter", async () => {
-      const response = await request(app)
-        .get("/api/dashboard/stock-levels?category=Electronics")
-        .expect((res) => {
-          expect([200, 500]).toContain(res.status);
-        });
-
-      if (response.status === 200) {
-        expect(response.body.data.filters).toHaveProperty(
-          "category",
-          "Electronics"
-        );
-      }
-    });
-
-    it("should accept pagination parameters", async () => {
-      const response = await request(app)
-        .get("/api/dashboard/stock-levels?page=2&limit=25")
-        .expect((res) => {
-          expect([200, 500]).toContain(res.status);
-        });
-
-      if (response.status === 200) {
-        expect(response.body.data).toHaveProperty("pagination");
-        if (response.body.data.pagination) {
-          expect(response.body.data.pagination).toHaveProperty("page", 2);
-          expect(response.body.data.pagination).toHaveProperty("limit", 25);
+        // Check location structure if locations exist
+        if (product.locations.length > 0) {
+          const location = product.locations[0];
+          expect(location.location_id).toBeDefined();
+          expect(location.location_name).toBeDefined();
+          expect(location.quantity).toBeGreaterThanOrEqual(0);
+          expect(location.unit_cost).toBeGreaterThanOrEqual(0);
         }
       }
-    });
+    }, 10000);
+
+    it("should return stock levels with warehouse filter", async () => {
+      const response = await ApiTestHelpers.getStockLevels({ warehouseId: 1 });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+      expect(response.body.data.filters.warehouse_id).toBe(1);
+
+      // Verify that all products have inventory in the specified warehouse
+      if (response.body.data.products.length > 0) {
+        response.body.data.products.forEach((product: any) => {
+          const hasWarehouseInventory = product.locations.some(
+            (loc: any) => loc.location_id === 1
+          );
+          expect(hasWarehouseInventory).toBe(true);
+        });
+      }
+    }, 10000);
+
+    it("should return stock levels with low stock filter", async () => {
+      const response = await ApiTestHelpers.getStockLevels({
+        stockFilter: "low_stock",
+      });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+      expect(response.body.data.filters.stock_filter).toBe("low_stock");
+
+      // All returned products should have low stock
+      if (response.body.data.products.length > 0) {
+        response.body.data.products.forEach((product: any) => {
+          expect(product.low_stock).toBe(true);
+        });
+      }
+    }, 10000);
+
+    it("should return stock levels with out of stock filter", async () => {
+      const response = await ApiTestHelpers.getStockLevels({
+        stockFilter: "out_of_stock",
+      });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+      expect(response.body.data.filters.stock_filter).toBe("out_of_stock");
+
+      // All returned products should be out of stock
+      if (response.body.data.products.length > 0) {
+        response.body.data.products.forEach((product: any) => {
+          expect(product.out_of_stock).toBe(true);
+          expect(product.total_quantity).toBe(0);
+        });
+      }
+    }, 10000);
+
+    it("should return stock levels with search filter", async () => {
+      const searchTerm = "test";
+      const response = await ApiTestHelpers.getStockLevels({
+        search: searchTerm,
+      });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+
+      // Verify search results contain the search term
+      if (response.body.data.products.length > 0) {
+        response.body.data.products.forEach((product: any) => {
+          const matchesSearch =
+            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.category.toLowerCase().includes(searchTerm.toLowerCase());
+          expect(matchesSearch).toBe(true);
+        });
+      }
+    }, 10000);
+
+    it("should return stock levels with category filter", async () => {
+      const category = "Electronics";
+      const response = await ApiTestHelpers.getStockLevels({ category });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+
+      // All returned products should be in the specified category
+      if (response.body.data.products.length > 0) {
+        response.body.data.products.forEach((product: any) => {
+          expect(product.category).toBe(category);
+        });
+      }
+    }, 10000);
+
+    it("should return stock levels with pagination", async () => {
+      const page = 1;
+      const limit = 5;
+      const response = await ApiTestHelpers.getStockLevels({ page, limit });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+
+      expect(response.body.data.pagination.page).toBe(page);
+      expect(response.body.data.pagination.limit).toBe(limit);
+      expect(response.body.data.products.length).toBeLessThanOrEqual(limit);
+      expect(response.body.data.pagination.total).toBeGreaterThanOrEqual(0);
+    }, 10000);
+
+    it("should return stock levels with combined filters", async () => {
+      const response = await ApiTestHelpers.getStockLevels({
+        warehouseId: 1,
+        stockFilter: "all",
+        search: "product",
+        page: 1,
+        limit: 10,
+      });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+
+      expect(response.body.data.filters.warehouse_id).toBe(1);
+      expect(response.body.data.filters.stock_filter).toBe("all");
+      expect(response.body.data.pagination.page).toBe(1);
+      expect(response.body.data.pagination.limit).toBe(10);
+    }, 10000);
+
+    it("should return empty results for non-matching search", async () => {
+      const response = await ApiTestHelpers.getStockLevels({
+        search: "nonexistentproduct12345",
+      });
+      expect(response.status).toBe(200);
+      ValidationHelpers.validateStockLevelsResponse(response);
+      expect(response.body.data.products.length).toBe(0);
+    }, 10000);
 
     it("should return 400 for invalid warehouse_id", async () => {
-      await request(app)
-        .get("/api/dashboard/stock-levels?warehouse_id=invalid")
-        .expect(400)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("success", false);
-          expect(res.body).toHaveProperty(
-            "error",
-            "Invalid warehouse_id parameter"
-          );
-        });
+      const response = await ApiTestHelpers.makeRequest(
+        "GET",
+        "/api/dashboard/stock-levels?warehouse_id=invalid"
+      );
+      ValidationHelpers.validateErrorResponse(response, 400);
     });
 
-    it("should return 400 for invalid page parameter", async () => {
-      await request(app)
-        .get("/api/dashboard/stock-levels?page=0")
-        .expect(400)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("success", false);
-          expect(res.body.error).toContain("Invalid page parameter");
-        });
+    it("should return 400 for invalid stock_filter", async () => {
+      const response = await ApiTestHelpers.getStockLevels({
+        stockFilter: "invalid",
+      });
+      ValidationHelpers.validateErrorResponse(response, 400);
     });
 
-    it("should return 400 for invalid limit parameter", async () => {
-      await request(app)
-        .get("/api/dashboard/stock-levels?limit=101")
-        .expect(400)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("success", false);
-          expect(res.body.error).toContain("Invalid limit parameter");
-        });
+    it("should return 400 for invalid pagination parameters", async () => {
+      const response = await ApiTestHelpers.getStockLevels({ page: 0 });
+      ValidationHelpers.validateErrorResponse(response, 400);
     });
 
-    it("should return 400 for invalid stock_filter parameter", async () => {
-      await request(app)
-        .get("/api/dashboard/stock-levels?stock_filter=invalid")
-        .expect(400)
-        .expect((res) => {
-          expect(res.body).toHaveProperty("success", false);
-          expect(res.body.error).toContain("Invalid stock_filter parameter");
-        });
+    it("should return 400 for negative page number", async () => {
+      const response = await ApiTestHelpers.getStockLevels({ page: -1 });
+      ValidationHelpers.validateErrorResponse(response, 400);
     });
 
-    it("should handle multiple parameters", async () => {
-      const response = await request(app)
-        .get(
-          "/api/dashboard/stock-levels?warehouse_id=1&stock_filter=low_stock&search=test&category=Electronics&page=1&limit=10"
-        )
-        .expect((res) => {
-          expect([200, 500]).toContain(res.status);
-        });
+    it("should return 400 for limit exceeding maximum", async () => {
+      const response = await ApiTestHelpers.getStockLevels({ limit: 101 });
+      ValidationHelpers.validateErrorResponse(response, 400);
+    });
 
-      if (response.status === 200) {
-        expect(response.body.data.filters).toEqual({
-          warehouse_id: 1,
-          stock_filter: "low_stock",
-          search: "test",
-          category: "Electronics",
-        });
-        if (response.body.data.pagination) {
-          expect(response.body.data.pagination.page).toBe(1);
-          expect(response.body.data.pagination.limit).toBe(10);
-        }
+    it("should return 400 for zero limit", async () => {
+      const response = await ApiTestHelpers.getStockLevels({ limit: 0 });
+      ValidationHelpers.validateErrorResponse(response, 400);
+    });
+
+    it("should respond within performance threshold", async () => {
+      const { duration } = await PerformanceHelpers.measureResponseTime(() =>
+        ApiTestHelpers.getStockLevels()
+      );
+      PerformanceHelpers.validateResponseTime(duration, 1000); // 1 second threshold
+    }, 10000);
+
+    it("should handle concurrent requests efficiently", async () => {
+      const responses = await PerformanceHelpers.runConcurrentRequests(
+        () => ApiTestHelpers.getStockLevels({ limit: 10 }),
+        5
+      );
+
+      responses.forEach((response) => {
+        expect(response.status).toBe(200);
+        ValidationHelpers.validateStockLevelsResponse(response);
+      });
+    }, 15000);
+
+    it("should maintain consistent pagination across requests", async () => {
+      const page1Response = await ApiTestHelpers.getStockLevels({
+        page: 1,
+        limit: 5,
+      });
+      const page2Response = await ApiTestHelpers.getStockLevels({
+        page: 2,
+        limit: 5,
+      });
+
+      expect(page1Response.status).toBe(200);
+      expect(page2Response.status).toBe(200);
+
+      // Ensure no overlap between pages (if there are enough products)
+      if (
+        page1Response.body.data.products.length === 5 &&
+        page2Response.body.data.products.length > 0
+      ) {
+        const page1Ids = page1Response.body.data.products.map((p: any) => p.id);
+        const page2Ids = page2Response.body.data.products.map((p: any) => p.id);
+
+        const overlap = page1Ids.filter((id: number) => page2Ids.includes(id));
+        expect(overlap.length).toBe(0);
       }
-    });
+    }, 10000);
 
-    it("should filter out empty string parameters", async () => {
-      const response = await request(app)
-        .get("/api/dashboard/stock-levels?search=&category=")
-        .expect((res) => {
-          expect([200, 500]).toContain(res.status);
-        });
+    it("should return consistent total count across paginated requests", async () => {
+      const page1Response = await ApiTestHelpers.getStockLevels({
+        page: 1,
+        limit: 10,
+      });
+      const page2Response = await ApiTestHelpers.getStockLevels({
+        page: 2,
+        limit: 10,
+      });
 
-      if (response.status === 200) {
-        expect(response.body.data.filters.search).toBeUndefined();
-        expect(response.body.data.filters.category).toBeUndefined();
-      }
-    });
+      expect(page1Response.status).toBe(200);
+      expect(page2Response.status).toBe(200);
+
+      // Total count should be the same across pages
+      expect(page1Response.body.data.pagination.total).toBe(
+        page2Response.body.data.pagination.total
+      );
+    }, 10000);
   });
 });
