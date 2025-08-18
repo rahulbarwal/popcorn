@@ -249,7 +249,7 @@ export interface ProductListResponse {
   filters: {
     search?: string;
     category?: string;
-    stock_filter?: "all" | "low_stock" | "out_of_stock";
+    stock_filter?: "all" | "in_stock" | "low_stock" | "out_of_stock";
   };
   pagination?: PaginationMeta;
 }
