@@ -1,13 +1,43 @@
-import React from "react";
+import React, { useState } from "react";
 import Breadcrumb from "../components/Breadcrumb";
-import LoadingSpinner from "../components/LoadingSpinner";
+import ProductsTable from "../components/ProductsTable";
 import { Plus, Search, Filter } from "lucide-react";
+import { Product } from "../types/api";
 
 const Products = () => {
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const breadcrumbItems = [
     { label: "Dashboard", href: "/" },
     { label: "Products", current: true },
   ];
+
+  const handleAddProduct = () => {
+    // TODO: Implement in task 24
+    console.log("Add Product clicked - will be implemented in task 24");
+  };
+
+  const handleViewProduct = (product: Product) => {
+    // TODO: Implement in task 23
+    console.log(
+      "View Product clicked:",
+      product.name,
+      "- will be implemented in task 23"
+    );
+  };
+
+  const handleDeleteProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setShowDeleteConfirm(true);
+    // TODO: Implement delete confirmation in task 26
+    console.log(
+      "Delete Product clicked:",
+      product.name,
+      "- will be implemented in task 26"
+    );
+  };
 
   return (
     <main>
@@ -24,9 +54,9 @@ const Products = () => {
         </div>
         <div className="flex-shrink-0">
           <button
+            onClick={handleAddProduct}
             className="btn btn-primary w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             aria-label="Add new product to inventory"
-            disabled
             aria-describedby="add-product-help"
           >
             <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
@@ -34,7 +64,7 @@ const Products = () => {
             <span className="sm:hidden">Add</span>
           </button>
           <div id="add-product-help" className="sr-only">
-            This feature will be available in task 24
+            Opens product creation form (will be implemented in task 24)
           </div>
         </div>
       </header>
@@ -104,95 +134,15 @@ const Products = () => {
         </div>
       </section>
 
-      {/* Products Table Placeholder */}
-      <section className="card" aria-labelledby="products-table-heading">
+      {/* Products Table */}
+      <section aria-labelledby="products-table-heading">
         <h2 id="products-table-heading" className="sr-only">
           Products Table
         </h2>
-        <div className="table-responsive">
-          <table
-            className="min-w-full divide-y divide-gray-200"
-            role="table"
-            aria-label="Products inventory table"
-            aria-describedby="products-page-heading"
-          >
-            <caption className="sr-only">
-              Products inventory table showing product details including images,
-              names, categories, pricing, stock levels, and warehouse
-              distribution. This table will be fully implemented in task 21.
-            </caption>
-            <thead className="bg-gray-50">
-              <tr role="row">
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="image-col"
-                >
-                  Image
-                </th>
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="name-col"
-                >
-                  Name
-                </th>
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="category-col"
-                >
-                  Category
-                </th>
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="sale-price-col"
-                >
-                  Sale Price
-                </th>
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="cost-price-col"
-                >
-                  Cost Price
-                </th>
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="stock-col"
-                >
-                  Stock
-                </th>
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="warehouses-col"
-                >
-                  Warehouses
-                </th>
-                <th
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  scope="col"
-                  id="actions-col"
-                >
-                  <span className="sr-only">Actions</span>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td colSpan={8} className="px-3 sm:px-6 py-12 text-center">
-                  <div role="status" aria-live="polite">
-                    <LoadingSpinner text="Products table will be implemented in task 21" />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <ProductsTable
+          onViewProduct={handleViewProduct}
+          onDeleteProduct={handleDeleteProduct}
+        />
       </section>
 
       <section
