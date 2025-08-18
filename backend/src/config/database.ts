@@ -1,10 +1,11 @@
 import knex, { Knex } from "knex";
 import dotenv from "dotenv";
 import { DatabaseConfig } from "../types";
+import { cacheService } from "../utils/cache";
 
 dotenv.config();
 
-// Database configuration with connection pooling
+// Database configuration with optimized connection pooling
 const getDatabaseConfig = (): Knex.Config => {
   const baseConfig: Knex.Config = {
     client: "pg",
@@ -14,16 +15,41 @@ const getDatabaseConfig = (): Knex.Config => {
       user: process.env.DB_USER || "postgres",
       password: process.env.DB_PASSWORD || "password",
       database: process.env.DB_NAME || "inventory_dashboard",
+      // Connection-level optimizations
+      statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || "30000"), // 30 seconds
+      query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || "60000"), // 60 seconds
+      connectionTimeoutMillis: parseInt(
+        process.env.DB_CONNECTION_TIMEOUT || "5000"
+      ), // 5 seconds
     },
     pool: {
-      min: parseInt(process.env.DB_POOL_MIN || "2"),
-      max: parseInt(process.env.DB_POOL_MAX || "10"),
-      acquireTimeoutMillis: 60000,
-      createTimeoutMillis: 30000,
-      destroyTimeoutMillis: 5000,
-      idleTimeoutMillis: 30000,
-      reapIntervalMillis: 1000,
-      createRetryIntervalMillis: 100,
+      // Optimized pool settings for performance
+      min: parseInt(process.env.DB_POOL_MIN || "5"), // Increased minimum connections
+      max: parseInt(process.env.DB_POOL_MAX || "20"), // Increased maximum connections
+      acquireTimeoutMillis: parseInt(process.env.DB_ACQUIRE_TIMEOUT || "60000"), // 60 seconds
+      createTimeoutMillis: parseInt(process.env.DB_CREATE_TIMEOUT || "30000"), // 30 seconds
+      destroyTimeoutMillis: parseInt(process.env.DB_DESTROY_TIMEOUT || "5000"), // 5 seconds
+      idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || "300000"), // 5 minutes
+      reapIntervalMillis: parseInt(process.env.DB_REAP_INTERVAL || "1000"), // 1 second
+      createRetryIntervalMillis: parseInt(
+        process.env.DB_CREATE_RETRY_INTERVAL || "200"
+      ), // 200ms
+      // Validation and propagation settings
+      propagateCreateError: false, // Don't propagate pool creation errors immediately
+      afterCreate: function (conn: any, done: any) {
+        // Set connection-level optimizations
+        conn.query('SET statement_timeout = "30s"', function (err: any) {
+          if (err) {
+            console.warn("Failed to set statement_timeout:", err);
+          }
+          conn.query('SET lock_timeout = "10s"', function (err: any) {
+            if (err) {
+              console.warn("Failed to set lock_timeout:", err);
+            }
+            done(err, conn);
+          });
+        });
+      },
     },
     migrations: {
       tableName: "knex_migrations",
@@ -34,6 +60,24 @@ const getDatabaseConfig = (): Knex.Config => {
     },
     debug:
       process.env.NODE_ENV === "development" && process.env.DB_DEBUG === "true",
+    // Query optimization settings
+    asyncStackTraces: process.env.NODE_ENV === "development",
+    log: {
+      warn(message: string) {
+        console.warn("DB Warning:", message);
+      },
+      error(message: string) {
+        console.error("DB Error:", message);
+      },
+      deprecate(message: string) {
+        console.warn("DB Deprecation:", message);
+      },
+      debug(message: string) {
+        if (process.env.DB_DEBUG === "true") {
+          console.debug("DB Debug:", message);
+        }
+      },
+    },
   };
 
   // Add SSL configuration for production
@@ -60,6 +104,18 @@ export const checkDatabaseConnection = async (): Promise<boolean> => {
   try {
     await db.raw("SELECT 1");
     console.log("✅ Database connection established successfully");
+
+    // Initialize cache service
+    try {
+      await cacheService.connect();
+      console.log("✅ Cache service connected successfully");
+    } catch (cacheError) {
+      console.warn(
+        "⚠️ Cache service connection failed, continuing without cache:",
+        cacheError
+      );
+    }
+
     return true;
   } catch (error) {
     console.error("❌ Database connection failed:", error);
@@ -70,6 +126,10 @@ export const checkDatabaseConnection = async (): Promise<boolean> => {
 // Graceful shutdown
 export const closeDatabaseConnection = async (): Promise<void> => {
   try {
+    // Close cache connection first
+    await cacheService.disconnect();
+    console.log("✅ Cache service disconnected gracefully");
+
     await db.destroy();
     console.log("✅ Database connection closed gracefully");
   } catch (error) {

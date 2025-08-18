@@ -1,12 +1,18 @@
+import { Suspense, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProvider } from "./contexts/AppContext";
 import { WarehouseFilterProvider } from "./contexts/WarehouseFilterContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import NotificationSystem from "./components/NotificationSystem";
-import Dashboard from "./pages/Dashboard";
-import Products from "./pages/Products";
 import Layout from "./components/Layout";
+import {
+  LazyDashboard,
+  LazyProducts,
+  ComponentLoadingFallback,
+  ComponentErrorFallback,
+  preloadCriticalComponents,
+} from "./components/LazyComponents";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -29,17 +35,34 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Preload critical components on app start
+  useEffect(() => {
+    preloadCriticalComponents();
+  }, []);
+
   return (
-    <ErrorBoundary>
+    <ErrorBoundary
+      fallback={
+        <ComponentErrorFallback
+          error={new Error("App error")}
+          resetError={() => window.location.reload()}
+        />
+      }
+    >
       <AppProvider>
         <QueryClientProvider client={queryClient}>
           <WarehouseFilterProvider>
             <Router>
               <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/products" element={<Products />} />
-                </Routes>
+                <Suspense fallback={<ComponentLoadingFallback />}>
+                  <Routes>
+                    <Route path="/" element={<LazyDashboard.Component />} />
+                    <Route
+                      path="/products"
+                      element={<LazyProducts.Component />}
+                    />
+                  </Routes>
+                </Suspense>
               </Layout>
               <NotificationSystem />
             </Router>

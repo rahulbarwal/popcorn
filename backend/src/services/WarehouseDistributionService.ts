@@ -1,6 +1,7 @@
 import { LocationRepository } from "../repositories/LocationRepository";
 import { ProductLocationRepository } from "../repositories/ProductLocationRepository";
 import { ProductRepository } from "../repositories/ProductRepository";
+import { OptimizedQueryService } from "./OptimizedQueryService";
 import {
   WarehouseDistributionItem,
   WarehouseDistributionResponse,
@@ -36,24 +37,97 @@ export class WarehouseDistributionService {
   private locationRepository: LocationRepository;
   private productLocationRepository: ProductLocationRepository;
   private productRepository: ProductRepository;
+  private optimizedQueryService: OptimizedQueryService;
 
   constructor() {
     this.locationRepository = new LocationRepository();
     this.productLocationRepository = new ProductLocationRepository();
     this.productRepository = new ProductRepository();
+    this.optimizedQueryService = new OptimizedQueryService();
   }
 
   /**
-   * Get warehouse distribution data with inventory breakdown
+   * Get warehouse distribution data with inventory breakdown using optimized queries
    */
   async getWarehouseDistribution(
     filters: WarehouseDistributionFilters = {}
   ): Promise<WarehouseDistributionResponse> {
-    const warehouses = await this.getWarehouseInventoryBreakdown(filters);
+    // Use optimized query service for better performance
+    const warehouseData =
+      await this.optimizedQueryService.getWarehouseDistribution(filters);
+
+    // Transform to expected format and get detailed product breakdown
+    const warehouses: WarehouseDistributionItem[] = [];
+
+    for (const warehouse of warehouseData) {
+      const products = await this.getWarehouseProducts(
+        warehouse.warehouse_id,
+        filters
+      );
+
+      warehouses.push({
+        warehouse_id: warehouse.warehouse_id,
+        warehouse_name: warehouse.warehouse_name,
+        warehouse_address: warehouse.warehouse_address,
+        products,
+        total_products: warehouse.total_products,
+        total_value: warehouse.total_value,
+      });
+    }
 
     return {
       warehouses,
     };
+  }
+
+  /**
+   * Get products for a specific warehouse
+   */
+  private async getWarehouseProducts(
+    warehouseId: number,
+    filters: WarehouseDistributionFilters
+  ): Promise<WarehouseDistributionItem["products"]> {
+    let query = this.productLocationRepository
+      .query()
+      .select([
+        "p.id as product_id",
+        "p.sku",
+        "p.name",
+        "pl.quantity_on_hand as quantity",
+        "pl.unit_cost",
+        this.productLocationRepository.raw(
+          "(pl.quantity_on_hand * pl.unit_cost) as total_value"
+        ),
+      ])
+      .join("products as p", "pl.product_id", "p.id")
+      .where("pl.location_id", warehouseId)
+      .where("p.active", true)
+      .where("pl.quantity_on_hand", ">", 0);
+
+    if (filters.product_id) {
+      query = query.where("p.id", filters.product_id);
+    }
+
+    if (filters.category) {
+      query = query.where("p.category", filters.category);
+    }
+
+    if (filters.min_value) {
+      query = query.havingRaw("(pl.quantity_on_hand * pl.unit_cost) >= ?", [
+        filters.min_value,
+      ]);
+    }
+
+    const products = await query.orderBy("p.name");
+
+    return products.map((product: any) => ({
+      product_id: product.product_id,
+      sku: product.sku,
+      name: product.name,
+      quantity: parseInt(product.quantity),
+      unit_cost: parseFloat(product.unit_cost),
+      total_value: parseFloat(product.total_value),
+    }));
   }
 
   /**

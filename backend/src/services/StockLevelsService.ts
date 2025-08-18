@@ -1,6 +1,7 @@
 import { ProductRepository } from "../repositories/ProductRepository";
 import { ProductLocationRepository } from "../repositories/ProductLocationRepository";
 import { LocationRepository } from "../repositories/LocationRepository";
+import { OptimizedQueryService } from "./OptimizedQueryService";
 import {
   StockLevelItem,
   StockLevelsResponse,
@@ -21,21 +22,56 @@ export class StockLevelsService {
   private productRepository: ProductRepository;
   private productLocationRepository: ProductLocationRepository;
   private locationRepository: LocationRepository;
+  private optimizedQueryService: OptimizedQueryService;
 
   constructor() {
     this.productRepository = new ProductRepository();
     this.productLocationRepository = new ProductLocationRepository();
     this.locationRepository = new LocationRepository();
+    this.optimizedQueryService = new OptimizedQueryService();
   }
 
   /**
-   * Get stock levels with aggregation across locations and variants
+   * Get stock levels with aggregation across locations and variants using optimized queries
    */
   async getStockLevels(
     filters: StockLevelsFilters = {},
     pagination?: PaginationParams
   ): Promise<StockLevelsResponse> {
-    const products = await this.getAggregatedStockLevels(filters, pagination);
+    // Use optimized query service for better performance
+    const products = await this.optimizedQueryService.getStockLevels(
+      filters,
+      pagination
+    );
+
+    // Transform results to match expected format
+    const stockLevelItems: StockLevelItem[] = [];
+
+    for (const product of products) {
+      const locations = await this.getProductLocationBreakdown(
+        product.id,
+        filters.warehouse_id
+      );
+
+      const stockStatus = this.calculateStockStatus(
+        parseInt(product.total_quantity),
+        product.reorder_point
+      );
+
+      stockLevelItems.push({
+        id: product.id,
+        sku: product.sku,
+        name: product.name,
+        category: product.category,
+        image_url: product.image_url,
+        total_quantity: parseInt(product.total_quantity),
+        unit_cost: parseFloat(product.avg_unit_cost),
+        total_value: parseFloat(product.total_value),
+        reorder_point: product.reorder_point,
+        stock_status: stockStatus,
+        locations,
+      });
+    }
 
     // Get pagination metadata if pagination is requested
     let paginationMeta: PaginationMeta | undefined;
@@ -45,7 +81,7 @@ export class StockLevelsService {
     }
 
     return {
-      products,
+      products: stockLevelItems,
       filters: {
         warehouse_id: filters.warehouse_id,
         stock_filter: filters.stock_filter || "all",

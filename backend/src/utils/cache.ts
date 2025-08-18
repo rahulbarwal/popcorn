@@ -1,125 +1,329 @@
-/**
- * Simple in-memory cache implementation for API responses
- */
-export class MemoryCache {
-  private cache: Map<string, { data: any; expiry: number }> = new Map();
-  private defaultTTL: number = 5 * 60 * 1000; // 5 minutes in milliseconds
+import { createClient, RedisClientType } from "redis";
+import dotenv from "dotenv";
 
-  /**
-   * Set a value in the cache with optional TTL
-   */
-  set(key: string, value: any, ttl?: number): void {
-    const expiry = Date.now() + (ttl || this.defaultTTL);
-    this.cache.set(key, { data: value, expiry });
+dotenv.config();
+
+export interface CacheConfig {
+  host: string;
+  port: number;
+  password?: string;
+  db?: number;
+  ttl: number; // Default TTL in seconds
+}
+
+export class CacheService {
+  private client: RedisClientType;
+  private defaultTTL: number;
+  private isConnected: boolean = false;
+
+  constructor(config?: Partial<CacheConfig>) {
+    const defaultConfig: CacheConfig = {
+      host: process.env.REDIS_HOST || "localhost",
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+      password: process.env.REDIS_PASSWORD,
+      db: parseInt(process.env.REDIS_DB || "0"),
+      ttl: parseInt(process.env.CACHE_TTL || "300"), // 5 minutes default
+    };
+
+    const finalConfig = { ...defaultConfig, ...config };
+    this.defaultTTL = finalConfig.ttl;
+
+    // Create Redis client
+    this.client = createClient({
+      socket: {
+        host: finalConfig.host,
+        port: finalConfig.port,
+      },
+      password: finalConfig.password,
+      database: finalConfig.db,
+    });
+
+    // Handle connection events
+    this.client.on("connect", () => {
+      console.log("✅ Redis client connected");
+      this.isConnected = true;
+    });
+
+    this.client.on("error", (err) => {
+      console.error("❌ Redis client error:", err);
+      this.isConnected = false;
+    });
+
+    this.client.on("end", () => {
+      console.log("🔌 Redis client disconnected");
+      this.isConnected = false;
+    });
   }
 
   /**
-   * Get a value from the cache
+   * Connect to Redis
    */
-  get(key: string): any | null {
-    const item = this.cache.get(key);
+  async connect(): Promise<void> {
+    try {
+      await this.client.connect();
+    } catch (error) {
+      console.error("Failed to connect to Redis:", error);
+      throw error;
+    }
+  }
 
-    if (!item) {
+  /**
+   * Disconnect from Redis
+   */
+  async disconnect(): Promise<void> {
+    try {
+      await this.client.disconnect();
+    } catch (error) {
+      console.error("Failed to disconnect from Redis:", error);
+    }
+  }
+
+  /**
+   * Check if Redis is available
+   */
+  isAvailable(): boolean {
+    return this.isConnected;
+  }
+
+  /**
+   * Get value from cache
+   */
+  async get<T>(key: string): Promise<T | null> {
+    if (!this.isConnected) {
       return null;
     }
 
-    // Check if item has expired
-    if (Date.now() > item.expiry) {
-      this.cache.delete(key);
+    try {
+      const value = await this.client.get(key);
+      return value ? JSON.parse(value) : null;
+    } catch (error) {
+      console.error(`Cache get error for key ${key}:`, error);
       return null;
     }
-
-    return item.data;
   }
 
   /**
-   * Delete a value from the cache
+   * Set value in cache with TTL
    */
-  delete(key: string): boolean {
-    return this.cache.delete(key);
+  async set(key: string, value: any, ttl?: number): Promise<boolean> {
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      const serializedValue = JSON.stringify(value);
+      const expiration = ttl || this.defaultTTL;
+
+      await this.client.setEx(key, expiration, serializedValue);
+      return true;
+    } catch (error) {
+      console.error(`Cache set error for key ${key}:`, error);
+      return false;
+    }
   }
 
   /**
-   * Clear all cached values
+   * Delete value from cache
    */
-  clear(): void {
-    this.cache.clear();
+  async del(key: string): Promise<boolean> {
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      const result = await this.client.del(key);
+      return result > 0;
+    } catch (error) {
+      console.error(`Cache delete error for key ${key}:`, error);
+      return false;
+    }
   }
 
   /**
-   * Get cache size
+   * Delete multiple keys from cache
    */
-  size(): number {
-    return this.cache.size;
+  async delMany(keys: string[]): Promise<number> {
+    if (!this.isConnected || keys.length === 0) {
+      return 0;
+    }
+
+    try {
+      return await this.client.del(keys);
+    } catch (error) {
+      console.error(
+        `Cache delete many error for keys ${keys.join(", ")}:`,
+        error
+      );
+      return 0;
+    }
   }
 
   /**
-   * Clean up expired entries
+   * Check if key exists in cache
    */
-  cleanup(): void {
-    const now = Date.now();
-    for (const [key, item] of this.cache.entries()) {
-      if (now > item.expiry) {
-        this.cache.delete(key);
+  async exists(key: string): Promise<boolean> {
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      const result = await this.client.exists(key);
+      return result > 0;
+    } catch (error) {
+      console.error(`Cache exists error for key ${key}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Set TTL for existing key
+   */
+  async expire(key: string, ttl: number): Promise<boolean> {
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      const result = await this.client.expire(key, ttl);
+      return result;
+    } catch (error) {
+      console.error(`Cache expire error for key ${key}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get TTL for key
+   */
+  async ttl(key: string): Promise<number> {
+    if (!this.isConnected) {
+      return -1;
+    }
+
+    try {
+      return await this.client.ttl(key);
+    } catch (error) {
+      console.error(`Cache TTL error for key ${key}:`, error);
+      return -1;
+    }
+  }
+
+  /**
+   * Clear all cache (use with caution)
+   */
+  async flushAll(): Promise<boolean> {
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      await this.client.flushAll();
+      return true;
+    } catch (error) {
+      console.error("Cache flush all error:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  async getStats(): Promise<{
+    connected: boolean;
+    memory_usage?: string;
+    total_commands_processed?: string;
+    keyspace_hits?: string;
+    keyspace_misses?: string;
+  }> {
+    const stats = {
+      connected: this.isConnected,
+    };
+
+    if (!this.isConnected) {
+      return stats;
+    }
+
+    try {
+      const info = await this.client.info("memory");
+      const statsInfo = await this.client.info("stats");
+
+      // Parse memory info
+      const memoryMatch = info.match(/used_memory_human:([^\r\n]+)/);
+      if (memoryMatch) {
+        Object.assign(stats, { memory_usage: memoryMatch[1] });
       }
+
+      // Parse stats info
+      const commandsMatch = statsInfo.match(
+        /total_commands_processed:([^\r\n]+)/
+      );
+      const hitsMatch = statsInfo.match(/keyspace_hits:([^\r\n]+)/);
+      const missesMatch = statsInfo.match(/keyspace_misses:([^\r\n]+)/);
+
+      if (commandsMatch) {
+        Object.assign(stats, { total_commands_processed: commandsMatch[1] });
+      }
+      if (hitsMatch) {
+        Object.assign(stats, { keyspace_hits: hitsMatch[1] });
+      }
+      if (missesMatch) {
+        Object.assign(stats, { keyspace_misses: missesMatch[1] });
+      }
+
+      return stats;
+    } catch (error) {
+      console.error("Cache stats error:", error);
+      return stats;
     }
   }
 
   /**
-   * Generate cache key for summary metrics
+   * Generate cache key with namespace
    */
-  static generateSummaryMetricsKey(warehouseId?: number): string {
-    return `summary_metrics_${warehouseId || "all"}`;
+  static generateKey(namespace: string, ...parts: (string | number)[]): string {
+    return `inventory_dashboard:${namespace}:${parts.join(":")}`;
   }
 
   /**
-   * Generate cache key for stock levels
+   * Invalidate cache keys by pattern
    */
-  static generateStockLevelsKey(
-    filters: any,
-    pagination?: { page: number; limit: number }
-  ): string {
-    const filterStr = Object.keys(filters)
-      .sort()
-      .map((key) => `${key}:${filters[key]}`)
-      .join("|");
+  async invalidatePattern(pattern: string): Promise<number> {
+    if (!this.isConnected) {
+      return 0;
+    }
 
-    const paginationStr = pagination
-      ? `page:${pagination.page}|limit:${pagination.limit}`
-      : "";
-
-    return `stock_levels_${filterStr}_${paginationStr}`;
-  }
-
-  /**
-   * Generate cache key for recent purchases
-   */
-  static generateRecentPurchasesKey(filters: any, limit: number): string {
-    const filterStr = Object.keys(filters)
-      .sort()
-      .map((key) => `${key}:${filters[key]}`)
-      .join("|");
-
-    return `recent_purchases_${filterStr}_limit:${limit}`;
-  }
-
-  /**
-   * Generate cache key for warehouse distribution
-   */
-  static generateWarehouseDistributionKey(filters: any): string {
-    const filterStr = Object.keys(filters)
-      .sort()
-      .map((key) => `${key}:${filters[key]}`)
-      .join("|");
-
-    return `warehouse_distribution_${filterStr}`;
+    try {
+      const keys = await this.client.keys(pattern);
+      if (keys.length === 0) {
+        return 0;
+      }
+      return await this.client.del(keys);
+    } catch (error) {
+      console.error(`Cache invalidate pattern error for ${pattern}:`, error);
+      return 0;
+    }
   }
 }
 
-// Create a singleton instance
-export const cache = new MemoryCache();
+// Create singleton instance
+export const cacheService = new CacheService();
 
-// Clean up expired entries every 10 minutes
-setInterval(() => {
-  cache.cleanup();
-}, 10 * 60 * 1000);
+// Cache key constants
+export const CACHE_KEYS = {
+  SUMMARY_METRICS: "summary_metrics",
+  STOCK_LEVELS: "stock_levels",
+  WAREHOUSE_DISTRIBUTION: "warehouse_distribution",
+  RECENT_PURCHASES: "recent_purchases",
+  STOCK_VISUALIZATION: "stock_visualization",
+  PRODUCT_DETAILS: "product_details",
+  SUPPLIER_INFO: "supplier_info",
+  REORDER_SUGGESTIONS: "reorder_suggestions",
+} as const;
+
+// Cache TTL constants (in seconds)
+export const CACHE_TTL = {
+  SHORT: 60, // 1 minute
+  MEDIUM: 300, // 5 minutes
+  LONG: 900, // 15 minutes
+  VERY_LONG: 3600, // 1 hour
+} as const;

@@ -19,6 +19,65 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Performance optimizations
+    target: "esnext",
+    minify: "esbuild",
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Code splitting configuration
+        manualChunks: {
+          // Vendor chunks
+          vendor: ["react", "react-dom"],
+          router: ["react-router-dom"],
+          query: ["@tanstack/react-query"],
+          charts: ["recharts"],
+          forms: ["react-hook-form", "@hookform/resolvers", "zod"],
+          icons: ["lucide-react"],
+          utils: ["axios", "clsx"],
+        },
+        // Optimize chunk file names
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId
+            ? chunkInfo.facadeModuleId
+                .split("/")
+                .pop()
+                ?.replace(".tsx", "")
+                .replace(".ts", "")
+            : "chunk";
+          return `js/${facadeModuleId}-[hash].js`;
+        },
+        entryFileNames: "js/[name]-[hash].js",
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split(".") || [];
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext || "")) {
+            return `images/[name]-[hash][extname]`;
+          }
+          if (/css/i.test(ext || "")) {
+            return `css/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
+      },
+    },
+    // Chunk size warnings
+    chunkSizeWarningLimit: 1000,
+  },
+  // Performance optimizations
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "@tanstack/react-query",
+      "recharts",
+      "axios",
+      "clsx",
+      "lucide-react",
+    ],
+  },
   test: {
     globals: true,
     environment: "jsdom",

@@ -1,36 +1,37 @@
 import { ProductRepository } from "../repositories/ProductRepository";
 import { ProductLocationRepository } from "../repositories/ProductLocationRepository";
 import { CompanyRepository } from "../repositories/CompanyRepository";
+import { OptimizedQueryService } from "./OptimizedQueryService";
 import { SummaryMetrics } from "../types";
 
 export class SummaryMetricsService {
   private productRepository: ProductRepository;
   private productLocationRepository: ProductLocationRepository;
   private companyRepository: CompanyRepository;
+  private optimizedQueryService: OptimizedQueryService;
 
   constructor() {
     this.productRepository = new ProductRepository();
     this.productLocationRepository = new ProductLocationRepository();
     this.companyRepository = new CompanyRepository();
+    this.optimizedQueryService = new OptimizedQueryService();
   }
 
   /**
-   * Calculate all summary metrics for the dashboard
+   * Calculate all summary metrics for the dashboard using optimized queries
    */
   async calculateSummaryMetrics(warehouseId?: number): Promise<SummaryMetrics> {
-    const [
-      totalProducts,
-      lowStockCount,
-      outOfStockCount,
-      suppliersCount,
-      totalStockValue,
-    ] = await Promise.all([
-      this.getTotalProductsCount(warehouseId),
-      this.getLowStockCount(warehouseId),
-      this.getOutOfStockCount(warehouseId),
-      this.getSuppliersCount(),
-      this.getTotalStockValue(warehouseId),
-    ]);
+    // Use optimized query service for better performance
+    const metrics = await this.optimizedQueryService.getSummaryMetrics(
+      warehouseId
+    );
+
+    const totalProducts = parseInt(metrics.total_products || "0");
+    const lowStockCount = parseInt(metrics.low_stock_count || "0");
+    const outOfStockCount = parseInt(metrics.out_of_stock_count || "0");
+    const suppliersCount = parseInt(metrics.suppliers_count || "0");
+    const totalStockValue = parseFloat(metrics.total_stock_value || "0");
+    const excludedProducts = parseInt(metrics.excluded_products || "0");
 
     return {
       total_products: {
@@ -51,10 +52,10 @@ export class SummaryMetricsService {
         status: this.getSuppliersStatus(suppliersCount),
       },
       total_stock_value: {
-        value: totalStockValue.value,
+        value: totalStockValue,
         currency: "USD",
-        status: this.getStockValueStatus(totalStockValue.value),
-        excluded_products: totalStockValue.excludedProducts,
+        status: this.getStockValueStatus(totalStockValue),
+        excluded_products: excludedProducts,
       },
     };
   }
