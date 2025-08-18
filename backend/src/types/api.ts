@@ -36,6 +36,9 @@ export interface ApiResponse<T = any> {
   message?: string;
   error?: string;
   errors?: Record<string, string[]>;
+  code?: string;
+  stack?: string;
+  details?: any;
 }
 
 // Note: PaginationParams, PaginationMeta, and PaginatedResponse are defined in index.ts

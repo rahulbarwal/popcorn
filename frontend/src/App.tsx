@@ -3,14 +3,18 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProvider } from "./contexts/AppContext";
 import { WarehouseFilterProvider } from "./contexts/WarehouseFilterContext";
-import ErrorBoundary from "./components/ErrorBoundary";
+import {
+  CriticalErrorBoundary,
+  PageErrorBoundary,
+  NetworkStatus,
+} from "./components/ErrorBoundaries";
+import { OfflineIndicator } from "./hooks/useOfflineDetection";
 import NotificationSystem from "./components/NotificationSystem";
 import Layout from "./components/Layout";
 import {
   LazyDashboard,
   LazyProducts,
   ComponentLoadingFallback,
-  ComponentErrorFallback,
   preloadCriticalComponents,
 } from "./components/LazyComponents";
 import "./App.css";
@@ -25,11 +29,25 @@ const queryClient = new QueryClient({
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
           return false;
         }
+        // Don't retry if offline
+        if (!navigator.onLine) {
+          return false;
+        }
         return failureCount < 3;
       },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // Don't retry mutations on client errors or when offline
+        if (error?.response?.status >= 400 && error?.response?.status < 500) {
+          return false;
+        }
+        if (!navigator.onLine) {
+          return false;
+        }
+        return failureCount < 2;
+      },
     },
   },
 });
@@ -41,35 +59,32 @@ function App() {
   }, []);
 
   return (
-    <ErrorBoundary
-      fallback={
-        <ComponentErrorFallback
-          error={new Error("App error")}
-          resetError={() => window.location.reload()}
-        />
-      }
-    >
+    <CriticalErrorBoundary>
       <AppProvider>
         <QueryClientProvider client={queryClient}>
           <WarehouseFilterProvider>
             <Router>
+              <NetworkStatus />
+              <OfflineIndicator className="sticky top-0 z-50" />
               <Layout>
-                <Suspense fallback={<ComponentLoadingFallback />}>
-                  <Routes>
-                    <Route path="/" element={<LazyDashboard.Component />} />
-                    <Route
-                      path="/products"
-                      element={<LazyProducts.Component />}
-                    />
-                  </Routes>
-                </Suspense>
+                <PageErrorBoundary>
+                  <Suspense fallback={<ComponentLoadingFallback />}>
+                    <Routes>
+                      <Route path="/" element={<LazyDashboard.Component />} />
+                      <Route
+                        path="/products"
+                        element={<LazyProducts.Component />}
+                      />
+                    </Routes>
+                  </Suspense>
+                </PageErrorBoundary>
               </Layout>
               <NotificationSystem />
             </Router>
           </WarehouseFilterProvider>
         </QueryClientProvider>
       </AppProvider>
-    </ErrorBoundary>
+    </CriticalErrorBoundary>
   );
 }
 

@@ -14,6 +14,12 @@ import {
   OrderStatus,
 } from "../types";
 import { cache, MemoryCache } from "../utils/cache";
+import { logger } from "../utils/logger";
+import {
+  ValidationError,
+  NotFoundError,
+  DatabaseError,
+} from "../middleware/errorHandler";
 
 export class DashboardController {
   private summaryMetricsService: SummaryMetricsService;
@@ -33,33 +39,35 @@ export class DashboardController {
    * Get summary metrics for the dashboard
    */
   async getSummaryMetrics(req: Request, res: Response): Promise<void> {
+    const startTime = Date.now();
+    const warehouseId = req.query.warehouse_id
+      ? parseInt(req.query.warehouse_id as string)
+      : undefined;
+
+    logger.info("Fetching summary metrics", {
+      requestId: req.requestId,
+      warehouseId,
+    });
+
+    // Check cache first
+    const cacheKey = MemoryCache.generateSummaryMetricsKey(warehouseId);
+    const cachedResponse = cache.getSync<SummaryMetricsResponse>(cacheKey);
+
+    if (cachedResponse) {
+      logger.debug("Summary metrics served from cache", {
+        requestId: req.requestId,
+        cacheKey,
+        responseTime: `${Date.now() - startTime}ms`,
+      });
+
+      res.json({
+        success: true,
+        data: cachedResponse,
+      } as ApiResponse<SummaryMetricsResponse>);
+      return;
+    }
+
     try {
-      const warehouseId =
-        req.query.warehouse_id !== undefined
-          ? parseInt(req.query.warehouse_id as string)
-          : undefined;
-
-      // Validate warehouse_id if provided
-      if (req.query.warehouse_id !== undefined && isNaN(warehouseId!)) {
-        res.status(400).json({
-          success: false,
-          error: "Invalid warehouse_id parameter",
-        } as ApiResponse);
-        return;
-      }
-
-      // Check cache first
-      const cacheKey = MemoryCache.generateSummaryMetricsKey(warehouseId);
-      const cachedResponse = cache.get(cacheKey);
-
-      if (cachedResponse) {
-        res.json({
-          success: true,
-          data: cachedResponse,
-        } as ApiResponse<SummaryMetricsResponse>);
-        return;
-      }
-
       const metrics = await this.summaryMetricsService.calculateSummaryMetrics(
         warehouseId
       );
@@ -77,20 +85,36 @@ export class DashboardController {
       };
 
       // Cache the response for 2 minutes (metrics don't need to be real-time)
-      cache.set(cacheKey, response, 2 * 60 * 1000);
+      cache.setSync(cacheKey, response, 2 * 60 * 1000);
+
+      const responseTime = Date.now() - startTime;
+      logger.info("Summary metrics calculated successfully", {
+        requestId: req.requestId,
+        warehouseId,
+        responseTime: `${responseTime}ms`,
+        metricsCount: Object.keys(metrics).length,
+      });
 
       res.json({
         success: true,
         data: response,
       } as ApiResponse<SummaryMetricsResponse>);
     } catch (error) {
-      console.error("Error fetching summary metrics:", error);
-      res.status(500).json({
-        success: false,
-        error: "Failed to fetch summary metrics",
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
-      } as ApiResponse);
+      logger.error("Failed to fetch summary metrics", {
+        requestId: req.requestId,
+        warehouseId,
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      if (error instanceof Error && error.message.includes("database")) {
+        throw new DatabaseError(
+          "Failed to fetch summary metrics from database",
+          error
+        );
+      }
+
+      throw error;
     }
   }
 
@@ -175,7 +199,7 @@ export class DashboardController {
         page,
         limit,
       });
-      const cachedResponse = cache.get(cacheKey);
+      const cachedResponse = cache.getSync<StockLevelsResponse>(cacheKey);
 
       if (cachedResponse) {
         res.json({
@@ -192,7 +216,7 @@ export class DashboardController {
       );
 
       // Cache the response for 1 minute (stock levels need more frequent updates)
-      cache.set(cacheKey, stockLevelsResponse, 60 * 1000);
+      cache.setSync(cacheKey, stockLevelsResponse, 60 * 1000);
 
       res.json({
         success: true,
@@ -304,7 +328,7 @@ export class DashboardController {
 
       // Check cache first (cache for 30 seconds as purchase orders change less frequently than stock)
       const cacheKey = MemoryCache.generateRecentPurchasesKey(filters, limit);
-      const cachedResponse = cache.get(cacheKey);
+      const cachedResponse = cache.getSync<RecentPurchasesResponse>(cacheKey);
 
       if (cachedResponse) {
         res.json({
@@ -319,7 +343,7 @@ export class DashboardController {
         await this.purchaseOrderService.getRecentPurchases(filters, limit);
 
       // Cache the response for 30 seconds
-      cache.set(cacheKey, recentPurchasesResponse, 30 * 1000);
+      cache.setSync(cacheKey, recentPurchasesResponse, 30 * 1000);
 
       res.json({
         success: true,
@@ -402,7 +426,8 @@ export class DashboardController {
 
       // Check cache first (cache for 2 minutes as warehouse distribution changes less frequently)
       const cacheKey = MemoryCache.generateWarehouseDistributionKey(filters);
-      const cachedResponse = cache.get(cacheKey);
+      const cachedResponse =
+        cache.getSync<WarehouseDistributionResponse>(cacheKey);
 
       if (cachedResponse) {
         res.json({
@@ -419,7 +444,7 @@ export class DashboardController {
         );
 
       // Cache the response for 2 minutes
-      cache.set(cacheKey, warehouseDistributionResponse, 2 * 60 * 1000);
+      cache.setSync(cacheKey, warehouseDistributionResponse, 2 * 60 * 1000);
 
       res.json({
         success: true,

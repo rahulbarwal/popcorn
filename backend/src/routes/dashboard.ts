@@ -1,8 +1,14 @@
 import { Router } from "express";
 import { DashboardController } from "../controllers/DashboardController";
+import { validate, dashboardSchemas } from "../middleware/validation";
+import { dashboardRateLimit } from "../middleware/rateLimiter";
+import { asyncHandler } from "../middleware/errorHandler";
 
 const router = Router();
 const dashboardController = new DashboardController();
+
+// Apply dashboard-specific rate limiting
+router.use(dashboardRateLimit.middleware());
 
 /**
  * GET /api/dashboard/summary-metrics
@@ -12,7 +18,8 @@ const dashboardController = new DashboardController();
  */
 router.get(
   "/summary-metrics",
-  dashboardController.getSummaryMetrics.bind(dashboardController)
+  validate(dashboardSchemas.summaryMetrics),
+  asyncHandler(dashboardController.getSummaryMetrics.bind(dashboardController))
 );
 
 /**
@@ -28,7 +35,8 @@ router.get(
  */
 router.get(
   "/stock-levels",
-  dashboardController.getStockLevels.bind(dashboardController)
+  validate(dashboardSchemas.stockLevels),
+  asyncHandler(dashboardController.getStockLevels.bind(dashboardController))
 );
 
 /**
@@ -44,7 +52,8 @@ router.get(
  */
 router.get(
   "/recent-purchases",
-  dashboardController.getRecentPurchases.bind(dashboardController)
+  validate(dashboardSchemas.recentPurchases),
+  asyncHandler(dashboardController.getRecentPurchases.bind(dashboardController))
 );
 
 /**
@@ -58,7 +67,10 @@ router.get(
  */
 router.get(
   "/warehouse-distribution",
-  dashboardController.getWarehouseDistribution.bind(dashboardController)
+  validate(dashboardSchemas.warehouseDistribution),
+  asyncHandler(
+    dashboardController.getWarehouseDistribution.bind(dashboardController)
+  )
 );
 
 export default router;

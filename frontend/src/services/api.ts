@@ -56,45 +56,114 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    // Handle different error types
+    // Enhanced error handling with better categorization
+    const enhancedError = new ApiError(
+      error.message || "Request failed",
+      error.response?.status,
+      error.response?.data
+    );
+
     if (error.response) {
       // Server responded with error status
       const { status, data } = error.response;
 
+      // Extract error message from response
+      const errorMessage =
+        data?.error || data?.message || `HTTP ${status} Error`;
+      enhancedError.message = errorMessage;
+
       switch (status) {
+        case 400:
+          // Bad Request
+          enhancedError.message =
+            data?.error || "Invalid request. Please check your input.";
+          break;
         case 401:
           // Unauthorized - clear auth token and redirect to login
           localStorage.removeItem("auth_token");
-          window.location.href = "/login";
+          enhancedError.message =
+            "Your session has expired. Please log in again.";
+          // Don't redirect immediately in case this is handled by the component
+          setTimeout(() => {
+            if (!localStorage.getItem("auth_token")) {
+              window.location.href = "/login";
+            }
+          }, 1000);
           break;
         case 403:
           // Forbidden
-          console.error("Access forbidden:", data);
+          enhancedError.message =
+            "You do not have permission to perform this action.";
           break;
         case 404:
           // Not found
-          console.error("Resource not found:", error.config?.url);
+          enhancedError.message = "The requested resource was not found.";
+          break;
+        case 409:
+          // Conflict
+          enhancedError.message =
+            data?.error ||
+            "A conflict occurred. The resource may already exist.";
           break;
         case 422:
           // Validation error
-          console.error("Validation error:", data);
+          enhancedError.message =
+            data?.error || "Please check your input and try again.";
+          break;
+        case 429:
+          // Rate limit exceeded
+          enhancedError.message =
+            "Too many requests. Please wait a moment and try again.";
           break;
         case 500:
           // Server error
-          console.error("Server error:", data);
+          enhancedError.message =
+            "A server error occurred. Please try again later.";
+          break;
+        case 502:
+        case 503:
+        case 504:
+          // Service unavailable
+          enhancedError.message =
+            "The service is temporarily unavailable. Please try again later.";
           break;
         default:
-          console.error("API Error:", status, data);
+          enhancedError.message = errorMessage;
       }
+
+      console.error(`API Error ${status}:`, {
+        url: error.config?.url,
+        method: error.config?.method,
+        status,
+        message: enhancedError.message,
+        data,
+      });
     } else if (error.request) {
-      // Network error
-      console.error("Network error:", error.message);
+      // Network error - no response received
+      if (!navigator.onLine) {
+        enhancedError.message =
+          "You appear to be offline. Please check your internet connection.";
+      } else if (error.code === "ECONNABORTED") {
+        enhancedError.message = "The request timed out. Please try again.";
+      } else {
+        enhancedError.message =
+          "Unable to connect to the server. Please check your internet connection.";
+      }
+
+      console.error("Network error:", {
+        url: error.config?.url,
+        method: error.config?.method,
+        message: enhancedError.message,
+        code: error.code,
+      });
     } else {
-      // Other error
-      console.error("Request error:", error.message);
+      // Request setup error
+      enhancedError.message =
+        "An unexpected error occurred while making the request.";
+      console.error("Request setup error:", error.message);
     }
 
-    return Promise.reject(error);
+    return Promise.reject(enhancedError);
   }
 );
 

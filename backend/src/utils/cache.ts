@@ -185,7 +185,7 @@ export class CacheService {
 
     try {
       const result = await this.client.expire(key, ttl);
-      return result;
+      return result === 1;
     } catch (error) {
       console.error(`Cache expire error for key ${key}:`, error);
       return false;
@@ -305,8 +305,132 @@ export class CacheService {
   }
 }
 
-// Create singleton instance
+// Memory cache fallback for when Redis is not available
+class MemoryCacheImpl {
+  private cache = new Map<string, { value: any; expiry: number }>();
+  private cleanupInterval: NodeJS.Timeout;
+
+  constructor() {
+    // Clean up expired entries every minute
+    this.cleanupInterval = setInterval(() => {
+      this.cleanup();
+    }, 60000);
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.expiry <= now) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      return null;
+    }
+
+    if (entry.expiry <= Date.now()) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.value;
+  }
+
+  set(key: string, value: any, ttlMs: number = 300000): boolean {
+    const expiry = Date.now() + ttlMs;
+    this.cache.set(key, { value, expiry });
+    return true;
+  }
+
+  del(key: string): boolean {
+    return this.cache.delete(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  size(): number {
+    return this.cache.size;
+  }
+
+  // Generate cache keys for different data types
+  static generateSummaryMetricsKey(warehouseId?: number): string {
+    return `summary_metrics:${warehouseId || "all"}`;
+  }
+
+  static generateStockLevelsKey(filters: any, pagination?: any): string {
+    const cacheData = { filters, pagination };
+    const filterStr = JSON.stringify(cacheData);
+    return `stock_levels:${Buffer.from(filterStr).toString("base64")}`;
+  }
+
+  static generateWarehouseDistributionKey(filters: any): string {
+    const filterStr = JSON.stringify(filters);
+    return `warehouse_distribution:${Buffer.from(filterStr).toString(
+      "base64"
+    )}`;
+  }
+
+  static generateRecentPurchasesKey(filters: any, limit?: number): string {
+    const cacheData = { filters, limit };
+    const filterStr = JSON.stringify(cacheData);
+    return `recent_purchases:${Buffer.from(filterStr).toString("base64")}`;
+  }
+
+  destroy(): void {
+    clearInterval(this.cleanupInterval);
+    this.cache.clear();
+  }
+}
+
+// Create singleton instances
 export const cacheService = new CacheService();
+export const memoryCache = new MemoryCacheImpl();
+
+// Export MemoryCache class for backward compatibility
+export const MemoryCache = MemoryCacheImpl;
+
+// Unified cache interface that falls back to memory cache
+export const cache = {
+  async get<T>(key: string): Promise<T | null> {
+    if (cacheService.isAvailable()) {
+      return await cacheService.get<T>(key);
+    }
+    return memoryCache.get<T>(key);
+  },
+
+  async set(key: string, value: any, ttlMs: number = 300000): Promise<boolean> {
+    if (cacheService.isAvailable()) {
+      return await cacheService.set(key, value, Math.floor(ttlMs / 1000));
+    }
+    return memoryCache.set(key, value, ttlMs);
+  },
+
+  async del(key: string): Promise<boolean> {
+    if (cacheService.isAvailable()) {
+      return await cacheService.del(key);
+    }
+    return memoryCache.del(key);
+  },
+
+  // Synchronous versions for backward compatibility
+  getSync: <T>(key: string): T | null => {
+    return memoryCache.get<T>(key);
+  },
+
+  setSync: (key: string, value: any, ttlMs: number = 300000): boolean => {
+    return memoryCache.set(key, value, ttlMs);
+  },
+
+  deleteSync: (key: string): boolean => {
+    return memoryCache.del(key);
+  },
+};
 
 // Cache key constants
 export const CACHE_KEYS = {
