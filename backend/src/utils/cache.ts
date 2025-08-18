@@ -382,6 +382,11 @@ class MemoryCacheImpl {
     return `recent_purchases:${Buffer.from(filterStr).toString("base64")}`;
   }
 
+  static generateStockVisualizationKey(filters: any): string {
+    const filterStr = JSON.stringify(filters);
+    return `stock_visualization:${Buffer.from(filterStr).toString("base64")}`;
+  }
+
   destroy(): void {
     clearInterval(this.cleanupInterval);
     this.cache.clear();

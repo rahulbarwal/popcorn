@@ -135,6 +135,10 @@ export const dashboardSchemas = {
       min_value: Joi.number().min(0).optional(),
     }),
   },
+
+  stockVisualization: {
+    query: commonSchemas.warehouseFilter,
+  },
 };
 
 // Product management validation schemas

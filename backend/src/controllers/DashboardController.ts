@@ -3,11 +3,13 @@ import { SummaryMetricsService } from "../services/SummaryMetricsService";
 import { StockLevelsService } from "../services/StockLevelsService";
 import { PurchaseOrderService } from "../services/PurchaseOrderService";
 import { WarehouseDistributionService } from "../services/WarehouseDistributionService";
+import { StockVisualizationService } from "../services/StockVisualizationService";
 import {
   SummaryMetricsResponse,
   StockLevelsResponse,
   RecentPurchasesResponse,
   WarehouseDistributionResponse,
+  StockVisualizationResponse,
   ApiResponse,
   PaginationParams,
   StockFilter,
@@ -26,12 +28,14 @@ export class DashboardController {
   private stockLevelsService: StockLevelsService;
   private purchaseOrderService: PurchaseOrderService;
   private warehouseDistributionService: WarehouseDistributionService;
+  private stockVisualizationService: StockVisualizationService;
 
   constructor() {
     this.summaryMetricsService = new SummaryMetricsService();
     this.stockLevelsService = new StockLevelsService();
     this.purchaseOrderService = new PurchaseOrderService();
     this.warehouseDistributionService = new WarehouseDistributionService();
+    this.stockVisualizationService = new StockVisualizationService();
   }
 
   /**
@@ -455,6 +459,107 @@ export class DashboardController {
       res.status(500).json({
         success: false,
         error: "Failed to fetch warehouse distribution",
+        message:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * GET /api/dashboard/stock-visualization
+   * Get stock visualization data for chart rendering
+   * Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.8
+   */
+  async getStockVisualization(req: Request, res: Response): Promise<void> {
+    const startTime = Date.now();
+
+    try {
+      // Parse query parameters
+      const warehouseId = req.query.warehouse_id
+        ? parseInt(req.query.warehouse_id as string)
+        : undefined;
+
+      // Validate parameters
+      if (req.query.warehouse_id && isNaN(warehouseId!)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid warehouse_id parameter",
+        } as ApiResponse);
+        return;
+      }
+
+      // Build filters object
+      const filters = {
+        warehouse_id: warehouseId,
+      };
+
+      // Remove undefined values
+      Object.keys(filters).forEach((key) => {
+        if (filters[key as keyof typeof filters] === undefined) {
+          delete filters[key as keyof typeof filters];
+        }
+      });
+
+      logger.info("Fetching stock visualization data", {
+        requestId: req.requestId,
+        warehouseId,
+      });
+
+      // Check cache first (cache for 5 minutes as chart data doesn't need real-time updates)
+      const cacheKey = MemoryCache.generateStockVisualizationKey(filters);
+      const cachedResponse =
+        cache.getSync<StockVisualizationResponse>(cacheKey);
+
+      if (cachedResponse) {
+        logger.debug("Stock visualization data served from cache", {
+          requestId: req.requestId,
+          cacheKey,
+          responseTime: `${Date.now() - startTime}ms`,
+        });
+
+        res.json({
+          success: true,
+          data: cachedResponse,
+        } as ApiResponse<StockVisualizationResponse>);
+        return;
+      }
+
+      // Get stock visualization data from service
+      const stockVisualizationResponse =
+        await this.stockVisualizationService.getStockVisualizationData(filters);
+
+      // Cache the response for 5 minutes (chart data can be cached longer)
+      cache.setSync(cacheKey, stockVisualizationResponse, 5 * 60 * 1000);
+
+      const responseTime = Date.now() - startTime;
+      logger.info("Stock visualization data fetched successfully", {
+        requestId: req.requestId,
+        warehouseId,
+        responseTime: `${responseTime}ms`,
+        productsCount: stockVisualizationResponse.chart_data.products.length,
+      });
+
+      res.json({
+        success: true,
+        data: stockVisualizationResponse,
+      } as ApiResponse<StockVisualizationResponse>);
+    } catch (error) {
+      logger.error("Failed to fetch stock visualization data", {
+        requestId: req.requestId,
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      if (error instanceof Error && error.message.includes("database")) {
+        throw new DatabaseError(
+          "Failed to fetch stock visualization data from database",
+          error
+        );
+      }
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch stock visualization data",
         message:
           error instanceof Error ? error.message : "Unknown error occurred",
       } as ApiResponse);

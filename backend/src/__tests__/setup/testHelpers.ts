@@ -120,6 +120,22 @@ export class ApiTestHelpers {
     return this.makeRequest("GET", url);
   }
 
+  static getStockVisualization(
+    params: {
+      warehouseId?: number;
+    } = {}
+  ) {
+    const queryParams = new URLSearchParams();
+
+    if (params.warehouseId)
+      queryParams.append("warehouse_id", params.warehouseId.toString());
+
+    const url = `/api/dashboard/stock-visualization${
+      queryParams.toString() ? "?" + queryParams.toString() : ""
+    }`;
+    return this.makeRequest("GET", url);
+  }
+
   static getSuppliers(
     params: {
       includeInactive?: boolean;

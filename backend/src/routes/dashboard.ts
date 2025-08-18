@@ -73,4 +73,18 @@ router.get(
   )
 );
 
+/**
+ * GET /api/dashboard/stock-visualization
+ * Get stock visualization data for chart rendering
+ * Query parameters:
+ * - warehouse_id (optional): Filter by specific warehouse
+ */
+router.get(
+  "/stock-visualization",
+  validate(dashboardSchemas.stockVisualization),
+  asyncHandler(
+    dashboardController.getStockVisualization.bind(dashboardController)
+  )
+);
+
 export default router;

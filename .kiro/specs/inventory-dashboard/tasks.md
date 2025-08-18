@@ -275,8 +275,8 @@
   - Implement visual regression testing for UI components
   - _Requirements: All requirements need testing coverage_
 
-- [ ] 18. Build stock visualization service and API
-- [ ] 18.1 Implement chart data aggregation logic
+- [x] 18. Build stock visualization service and API
+- [x] 18.1 Implement chart data aggregation logic
 
   - Write service functions to aggregate stock data by product and warehouse for chart display
   - Create queries to fetch product names, SKUs, and quantities grouped by warehouse
@@ -284,7 +284,7 @@
   - Add color assignment logic for consistent warehouse representation
   - _Requirements: 11.1, 11.2, 11.3, 11.5_
 
-- [ ] 18.2 Create stock visualization API endpoint
+- [x] 18.2 Create stock visualization API endpoint
 
   - Build GET /api/dashboard/stock-visualization endpoint with warehouse filtering
   - Implement response formatting optimized for chart rendering libraries
