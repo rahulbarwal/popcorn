@@ -13,14 +13,17 @@ import {
 } from "lucide-react";
 import {
   CreateProductRequest,
+  UpdateProductRequest,
   WarehouseStockInput,
   Warehouse,
   ProductValidationResponse,
+  ProductDetail,
 } from "../types/api";
 import {
   useWarehouses,
   useCategories,
   useCreateProduct,
+  useUpdateProduct,
 } from "../hooks/useApi";
 import { useDebounce } from "../hooks/useDebounce";
 import { api } from "../services/api";
@@ -30,6 +33,10 @@ interface ProductFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (product: any) => void;
+  onError?: (error: any) => void;
+  editMode?: boolean;
+  initialData?: ProductDetail;
+  onUnsavedChanges?: (hasChanges: boolean) => void;
 }
 
 interface FormData {
@@ -74,6 +81,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  onError,
+  editMode = false,
+  initialData,
+  onUnsavedChanges,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +109,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [originalData, setOriginalData] = useState<FormData | null>(null);
 
   // API hooks
   const { data: warehousesData, isLoading: warehousesLoading } =
@@ -105,17 +117,49 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const { data: categoriesData, isLoading: categoriesLoading } =
     useCategories();
   const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
 
   // Debounced values for validation
   const debouncedSku = useDebounce(formData.sku, 500);
   const debouncedImageUrl = useDebounce(formData.image_url, 1000);
 
-  // Initialize warehouse stock when warehouses are loaded
+  // Initialize form data with initial data when in edit mode
   useEffect(() => {
-    if (
+    if (editMode && initialData && warehousesData?.warehouses) {
+      const warehouseStock: Record<number, string> = {};
+
+      // Initialize all warehouses with 0
+      warehousesData.warehouses.forEach((warehouse) => {
+        warehouseStock[warehouse.id] = "0";
+      });
+
+      // Set actual quantities from product locations
+      if (initialData.locations) {
+        initialData.locations.forEach((location) => {
+          warehouseStock[location.location_id] = location.quantity.toString();
+        });
+      }
+
+      const initialFormData = {
+        name: initialData.name,
+        sku: initialData.sku,
+        description: initialData.description || "",
+        category: initialData.category,
+        cost_price: initialData.cost_price.toString(),
+        sale_price: initialData.sale_price.toString(),
+        reorder_point: initialData.reorder_point.toString(),
+        image_url: initialData.image_url || "",
+        warehouse_stock: warehouseStock,
+      };
+
+      setFormData(initialFormData);
+      setOriginalData(initialFormData);
+    } else if (
+      !editMode &&
       warehousesData?.warehouses &&
       Object.keys(formData.warehouse_stock).length === 0
     ) {
+      // Initialize warehouse stock for create mode
       const initialStock: Record<number, string> = {};
       warehousesData.warehouses.forEach((warehouse) => {
         initialStock[warehouse.id] = "0";
@@ -125,7 +169,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         warehouse_stock: initialStock,
       }));
     }
-  }, [warehousesData, formData.warehouse_stock]);
+  }, [editMode, initialData, warehousesData, formData.warehouse_stock]);
 
   // SKU validation
   useEffect(() => {
@@ -162,14 +206,37 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   // Track unsaved changes
   useEffect(() => {
-    const hasChanges = Object.values(formData).some((value) => {
-      if (typeof value === "object") {
-        return Object.values(value).some((v) => v !== "0");
-      }
-      return value !== "";
-    });
+    let hasChanges = false;
+
+    if (editMode && initialData) {
+      // Check if any field has changed from initial data
+      hasChanges =
+        formData.name !== initialData.name ||
+        formData.description !== (initialData.description || "") ||
+        formData.category !== initialData.category ||
+        formData.cost_price !== initialData.cost_price.toString() ||
+        formData.sale_price !== initialData.sale_price.toString() ||
+        formData.reorder_point !== initialData.reorder_point.toString() ||
+        formData.image_url !== (initialData.image_url || "");
+
+      // Check warehouse stock changes (edit mode doesn't allow warehouse stock changes)
+    } else {
+      // For create mode, check if any field has been filled
+      hasChanges = Object.values(formData).some((value) => {
+        if (typeof value === "object") {
+          return Object.values(value).some((v) => v !== "0");
+        }
+        return value !== "";
+      });
+    }
+
     setHasUnsavedChanges(hasChanges);
-  }, [formData]);
+
+    // Notify parent component about unsaved changes
+    if (onUnsavedChanges) {
+      onUnsavedChanges(hasChanges);
+    }
+  }, [formData, editMode, initialData, onUnsavedChanges]);
 
   // Focus management and escape handling
   useEffect(() => {
@@ -316,16 +383,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
       newErrors.name = "Product name must be less than 255 characters";
     }
 
-    if (!formData.sku.trim()) {
-      newErrors.sku = "SKU is required";
-    } else if (formData.sku.length < 3) {
-      newErrors.sku = "SKU must be at least 3 characters long";
-    } else if (formData.sku.length > 50) {
-      newErrors.sku = "SKU must be less than 50 characters";
-    } else if (!/^[a-zA-Z0-9-]+$/.test(formData.sku)) {
-      newErrors.sku = "SKU can only contain letters, numbers, and hyphens";
-    } else if (validationState.sku.isValid === false) {
-      newErrors.sku = "This SKU is already in use";
+    if (!editMode) {
+      // SKU validation only for create mode
+      if (!formData.sku.trim()) {
+        newErrors.sku = "SKU is required";
+      } else if (formData.sku.length < 3) {
+        newErrors.sku = "SKU must be at least 3 characters long";
+      } else if (formData.sku.length > 50) {
+        newErrors.sku = "SKU must be less than 50 characters";
+      } else if (!/^[a-zA-Z0-9-]+$/.test(formData.sku)) {
+        newErrors.sku = "SKU can only contain letters, numbers, and hyphens";
+      } else if (validationState.sku.isValid === false) {
+        newErrors.sku = "This SKU is already in use";
+      }
     }
 
     if (!formData.category) {
@@ -419,13 +489,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
     // Clear warehouse-specific errors
     if (errors.warehouse_stock?.[warehouseId]) {
-      setErrors((prev) => ({
-        ...prev,
-        warehouse_stock: {
-          ...prev.warehouse_stock,
-          [warehouseId]: undefined,
-        },
-      }));
+      setErrors((prev) => {
+        const newWarehouseStock = { ...prev.warehouse_stock };
+        delete newWarehouseStock[warehouseId];
+        return {
+          ...prev,
+          warehouse_stock: newWarehouseStock,
+        };
+      });
     }
   };
 
@@ -436,36 +507,77 @@ const ProductForm: React.FC<ProductFormProps> = ({
       return;
     }
 
-    // Check if SKU validation is still in progress
-    if (validationState.sku.isValidating) {
+    // Check if SKU validation is still in progress (only for create mode)
+    if (!editMode && validationState.sku.isValidating) {
       setErrors({ general: "Please wait for SKU validation to complete" });
       return;
     }
 
-    // Prepare warehouse stock data
-    const warehouseStock: WarehouseStockInput[] = Object.entries(
-      formData.warehouse_stock
-    )
-      .map(([warehouseId, quantity]) => ({
-        warehouse_id: parseInt(warehouseId),
-        initial_quantity: parseInt(quantity),
-      }))
-      .filter((stock) => stock.initial_quantity > 0);
-
-    const productData: CreateProductRequest = {
-      name: formData.name.trim(),
-      sku: formData.sku.trim(),
-      description: formData.description.trim() || undefined,
-      category: formData.category,
-      cost_price: parseFloat(formData.cost_price),
-      sale_price: parseFloat(formData.sale_price),
-      reorder_point: parseInt(formData.reorder_point),
-      image_url: formData.image_url.trim() || undefined,
-      warehouse_stock: warehouseStock,
-    };
-
     try {
-      const result = await createProductMutation.mutateAsync(productData);
+      let result;
+
+      if (editMode && initialData) {
+        // Update existing product with optimistic updates
+        const updateData: UpdateProductRequest = {
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          category: formData.category,
+          cost_price: parseFloat(formData.cost_price),
+          sale_price: parseFloat(formData.sale_price),
+          reorder_point: parseInt(formData.reorder_point),
+          image_url: formData.image_url.trim() || undefined,
+        };
+
+        // Store current form data for potential rollback
+        const currentFormData = { ...formData };
+
+        try {
+          result = await updateProductMutation.mutateAsync({
+            id: initialData.id,
+            data: updateData,
+          });
+
+          // Update successful - update original data to reflect new state
+          setOriginalData(currentFormData);
+        } catch (updateError) {
+          // Rollback to original data on failure
+          if (originalData) {
+            setFormData(originalData);
+            setHasUnsavedChanges(false);
+          }
+
+          // Call error callback if provided
+          if (onError) {
+            onError(updateError);
+          }
+
+          throw updateError;
+        }
+      } else {
+        // Create new product
+        const warehouseStock: WarehouseStockInput[] = Object.entries(
+          formData.warehouse_stock
+        )
+          .map(([warehouseId, quantity]) => ({
+            warehouse_id: parseInt(warehouseId),
+            initial_quantity: parseInt(quantity),
+          }))
+          .filter((stock) => stock.initial_quantity > 0);
+
+        const productData: CreateProductRequest = {
+          name: formData.name.trim(),
+          sku: formData.sku.trim(),
+          description: formData.description.trim() || undefined,
+          category: formData.category,
+          cost_price: parseFloat(formData.cost_price),
+          sale_price: parseFloat(formData.sale_price),
+          reorder_point: parseInt(formData.reorder_point),
+          image_url: formData.image_url.trim() || undefined,
+          warehouse_stock: warehouseStock,
+        };
+
+        result = await createProductMutation.mutateAsync(productData);
+      }
 
       // Reset form
       resetForm();
@@ -478,27 +590,41 @@ const ProductForm: React.FC<ProductFormProps> = ({
       // Close modal
       onClose();
     } catch (error) {
-      // Error is handled by the mutation hook
-      console.error("Failed to create product:", error);
+      // Error is handled by the mutation hook and callback
+      console.error(
+        `Failed to ${editMode ? "update" : "create"} product:`,
+        error
+      );
+
+      // Call error callback if provided (for create mode)
+      if (!editMode && onError) {
+        onError(error);
+      }
     }
   };
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      sku: "",
-      description: "",
-      category: "",
-      cost_price: "",
-      sale_price: "",
-      reorder_point: "",
-      image_url: "",
-      warehouse_stock:
-        warehousesData?.warehouses.reduce((acc, warehouse) => {
-          acc[warehouse.id] = "0";
-          return acc;
-        }, {} as Record<number, string>) || {},
-    });
+    if (editMode && originalData) {
+      // In edit mode, reset to original data
+      setFormData(originalData);
+    } else {
+      // In create mode, reset to empty form
+      setFormData({
+        name: "",
+        sku: "",
+        description: "",
+        category: "",
+        cost_price: "",
+        sale_price: "",
+        reorder_point: "",
+        image_url: "",
+        warehouse_stock:
+          warehousesData?.warehouses.reduce((acc, warehouse) => {
+            acc[warehouse.id] = "0";
+            return acc;
+          }, {} as Record<number, string>) || {},
+      });
+    }
     setErrors({});
     setValidationState({
       sku: { isValidating: false, isValid: null },
@@ -517,6 +643,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const confirmClose = () => {
     resetForm();
+    setOriginalData(null);
     setShowUnsavedWarning(false);
     onClose();
   };
@@ -528,7 +655,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
   if (!isOpen) return null;
 
   const isLoading = warehousesLoading || categoriesLoading;
-  const isSubmitting = createProductMutation.isPending;
+  const isSubmitting =
+    createProductMutation.isPending || updateProductMutation.isPending;
 
   return (
     <>
@@ -554,7 +682,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 id="product-form-title"
                 className="text-lg sm:text-xl font-semibold text-gray-900"
               >
-                Add New Product
+                {editMode ? "Edit Product" : "Add New Product"}
               </h2>
               <button
                 onClick={handleClose}
@@ -633,7 +761,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                                 : validationState.sku.isValid === true
                                 ? "success"
                                 : ""
-                            }`}
+                            } ${editMode ? "bg-gray-50" : ""}`}
                             value={formData.sku}
                             onChange={(e) =>
                               handleInputChange(
@@ -644,7 +772,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
                             placeholder="Enter SKU (e.g., ABC-123)"
                             maxLength={50}
                             required
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || editMode}
+                            readOnly={editMode}
                           />
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                             {validationState.sku.isValidating ? (
@@ -661,17 +790,24 @@ const ProductForm: React.FC<ProductFormProps> = ({
                             {errors.sku}
                           </p>
                         )}
-                        {validationState.sku.message && !errors.sku && (
-                          <p
-                            className={`text-sm mt-1 ${
-                              validationState.sku.isValid
-                                ? "text-green-600"
-                                : "text-yellow-600"
-                            }`}
-                          >
-                            {validationState.sku.message}
+                        {editMode && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            SKU cannot be modified for existing products
                           </p>
                         )}
+                        {!editMode &&
+                          validationState.sku.message &&
+                          !errors.sku && (
+                            <p
+                              className={`text-sm mt-1 ${
+                                validationState.sku.isValid
+                                  ? "text-green-600"
+                                  : "text-yellow-600"
+                              }`}
+                            >
+                              {validationState.sku.message}
+                            </p>
+                          )}
                       </div>
 
                       {/* Category */}
@@ -864,115 +1000,118 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     </div>
                   </div>
 
-                  {/* Stock Management Section */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                      <Building2 className="w-5 h-5 text-gray-600" />
-                      <h3 className="text-lg font-medium text-gray-900">
-                        Stock Management
-                      </h3>
-                    </div>
+                  {/* Stock Management Section - Only show in create mode */}
+                  {!editMode && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                        <Building2 className="w-5 h-5 text-gray-600" />
+                        <h3 className="text-lg font-medium text-gray-900">
+                          Stock Management
+                        </h3>
+                      </div>
 
-                    <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        Set initial stock levels for each warehouse location.
-                        You can leave quantities at 0 and add stock later.
-                      </p>
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600">
+                          Set initial stock levels for each warehouse location.
+                          You can leave quantities at 0 and add stock later.
+                        </p>
 
-                      {warehousesData?.warehouses &&
-                      warehousesData.warehouses.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {warehousesData.warehouses.map((warehouse) => (
-                            <div
-                              key={warehouse.id}
-                              className="card card-compact border border-gray-200"
-                            >
-                              <div className="space-y-3">
-                                <div>
-                                  <h4 className="font-medium text-gray-900">
-                                    {warehouse.name}
-                                  </h4>
-                                  <p className="text-sm text-gray-600">
-                                    {warehouse.address}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor={`warehouse-${warehouse.id}`}
-                                    className="form-label"
-                                  >
-                                    Initial Quantity
-                                  </label>
-                                  <input
-                                    type="number"
-                                    id={`warehouse-${warehouse.id}`}
-                                    className={`form-input ${
-                                      errors.warehouse_stock?.[warehouse.id]
-                                        ? "error"
-                                        : ""
-                                    }`}
-                                    value={
-                                      formData.warehouse_stock[warehouse.id] ||
-                                      "0"
-                                    }
-                                    onChange={(e) =>
-                                      handleWarehouseStockChange(
-                                        warehouse.id,
-                                        e.target.value
-                                      )
-                                    }
-                                    placeholder="0"
-                                    min="0"
-                                    step="1"
-                                    disabled={isSubmitting}
-                                  />
-                                  {errors.warehouse_stock?.[warehouse.id] && (
-                                    <p className="form-error" role="alert">
-                                      {errors.warehouse_stock[warehouse.id]}
+                        {warehousesData?.warehouses &&
+                        warehousesData.warehouses.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {warehousesData.warehouses.map((warehouse) => (
+                              <div
+                                key={warehouse.id}
+                                className="card card-compact border border-gray-200"
+                              >
+                                <div className="space-y-3">
+                                  <div>
+                                    <h4 className="font-medium text-gray-900">
+                                      {warehouse.name}
+                                    </h4>
+                                    <p className="text-sm text-gray-600">
+                                      {warehouse.address}
                                     </p>
-                                  )}
+                                  </div>
+
+                                  <div>
+                                    <label
+                                      htmlFor={`warehouse-${warehouse.id}`}
+                                      className="form-label"
+                                    >
+                                      Initial Quantity
+                                    </label>
+                                    <input
+                                      type="number"
+                                      id={`warehouse-${warehouse.id}`}
+                                      className={`form-input ${
+                                        errors.warehouse_stock?.[warehouse.id]
+                                          ? "error"
+                                          : ""
+                                      }`}
+                                      value={
+                                        formData.warehouse_stock[
+                                          warehouse.id
+                                        ] || "0"
+                                      }
+                                      onChange={(e) =>
+                                        handleWarehouseStockChange(
+                                          warehouse.id,
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="0"
+                                      min="0"
+                                      step="1"
+                                      disabled={isSubmitting}
+                                    />
+                                    {errors.warehouse_stock?.[warehouse.id] && (
+                                      <p className="form-error" role="alert">
+                                        {errors.warehouse_stock[warehouse.id]}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <Building2 className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                          <p>No warehouses available</p>
-                        </div>
-                      )}
-
-                      {/* Stock Summary */}
-                      {warehousesData?.warehouses && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-700">
-                              Total Initial Stock:
-                            </span>
-                            <span className="text-lg font-semibold text-gray-900">
-                              {Object.values(formData.warehouse_stock)
-                                .reduce(
-                                  (sum, qty) => sum + (parseInt(qty) || 0),
-                                  0
-                                )
-                                .toLocaleString()}
-                            </span>
+                            ))}
                           </div>
-                          {Object.values(formData.warehouse_stock).every(
-                            (qty) => (parseInt(qty) || 0) === 0
-                          ) && (
-                            <p className="text-sm text-yellow-600 mt-2 flex items-center">
-                              <AlertCircle className="w-4 h-4 mr-1" />
-                              Consider adding initial stock to at least one
-                              warehouse
-                            </p>
-                          )}
-                        </div>
-                      )}
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <Building2 className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                            <p>No warehouses available</p>
+                          </div>
+                        )}
+
+                        {/* Stock Summary */}
+                        {warehousesData?.warehouses && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-700">
+                                Total Initial Stock:
+                              </span>
+                              <span className="text-lg font-semibold text-gray-900">
+                                {Object.values(formData.warehouse_stock)
+                                  .reduce(
+                                    (sum, qty) => sum + (parseInt(qty) || 0),
+                                    0
+                                  )
+                                  .toLocaleString()}
+                              </span>
+                            </div>
+                            {Object.values(formData.warehouse_stock).every(
+                              (qty) => (parseInt(qty) || 0) === 0
+                            ) && (
+                              <p className="text-sm text-yellow-600 mt-2 flex items-center">
+                                <AlertCircle className="w-4 h-4 mr-1" />
+                                Consider adding initial stock to at least one
+                                warehouse
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Image Section */}
                   <div className="space-y-6">
@@ -1091,12 +1230,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
+                      {editMode ? "Updating..." : "Creating..."}
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Create Product
+                      {editMode ? "Update Product" : "Create Product"}
                     </>
                   )}
                 </button>

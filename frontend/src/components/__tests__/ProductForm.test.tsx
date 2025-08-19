@@ -26,6 +26,7 @@ vi.mock("../../hooks/useApi", () => ({
   useWarehouses: vi.fn(),
   useCategories: vi.fn(),
   useCreateProduct: vi.fn(),
+  useUpdateProduct: vi.fn(),
 }));
 
 // Mock debounce hook
@@ -105,6 +106,13 @@ describe("ProductForm", () => {
     vi.mocked(apiHooks.useCreateProduct).mockReturnValue(
       mockCreateProduct as any
     );
+
+    vi.mocked(apiHooks.useUpdateProduct).mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+      isError: false,
+      error: null,
+    } as any);
 
     // Mock successful SKU validation
     vi.mocked(api.get).mockResolvedValue({ valid: true });
@@ -544,6 +552,330 @@ describe("ProductForm", () => {
       await user.keyboard("{Escape}");
 
       expect(mockOnClose).toHaveBeenCalled();
+    });
+  });
+
+  describe("Edit Mode", () => {
+    const mockProductData = {
+      id: 1,
+      name: "Test Product",
+      sku: "TEST-001",
+      description: "Test description",
+      category: "Electronics",
+      cost_price: 50,
+      sale_price: 100,
+      reorder_point: 10,
+      image_url: "https://example.com/image.jpg",
+      total_quantity: 150,
+      total_value: 7500,
+      stock_status: "adequate" as const,
+      warehouse_count: 2,
+      locations: [
+        {
+          location_id: 1,
+          location_name: "Main Warehouse",
+          quantity: 100,
+          unit_cost: 50,
+          value: 5000,
+        },
+      ],
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z",
+    };
+
+    const mockUpdateProduct = {
+      mutateAsync: vi.fn(),
+      isPending: false,
+      isError: false,
+      error: null,
+    };
+
+    beforeEach(() => {
+      vi.mocked(apiHooks.useUpdateProduct).mockReturnValue(
+        mockUpdateProduct as any
+      );
+    });
+
+    it("renders in edit mode with pre-populated data", () => {
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      expect(screen.getByText("Edit Product")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Test Product")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("TEST-001")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Test description")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("50")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("100")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("10")).toBeInTheDocument();
+    });
+
+    it("prevents SKU modification in edit mode", () => {
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      const skuInput = screen.getByDisplayValue("TEST-001");
+      expect(skuInput).toBeDisabled();
+      expect(skuInput).toHaveAttribute("readonly");
+    });
+
+    it("does not show warehouse stock section in edit mode", () => {
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      expect(screen.queryByText("Stock Management")).not.toBeInTheDocument();
+      expect(screen.queryByText("Main Warehouse")).not.toBeInTheDocument();
+    });
+
+    it("submits update request with correct data", async () => {
+      const user = userEvent.setup();
+      const mockUpdatedProduct = {
+        ...mockProductData,
+        name: "Updated Product",
+      };
+      mockUpdateProduct.mutateAsync.mockResolvedValue(mockUpdatedProduct);
+
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      // Modify the product name
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Updated Product");
+
+      const submitButton = screen.getByRole("button", {
+        name: /update product/i,
+      });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(mockUpdateProduct.mutateAsync).toHaveBeenCalledWith({
+          id: 1,
+          data: {
+            name: "Updated Product",
+            description: "Test description",
+            category: "Electronics",
+            cost_price: 50,
+            sale_price: 100,
+            reorder_point: 10,
+            image_url: "https://example.com/image.jpg",
+          },
+        });
+      });
+
+      expect(mockOnSuccess).toHaveBeenCalledWith(mockUpdatedProduct);
+      expect(mockOnClose).toHaveBeenCalled();
+    });
+
+    it("handles update errors with rollback", async () => {
+      const user = userEvent.setup();
+      const mockError = new Error("Update failed");
+      mockUpdateProduct.mutateAsync.mockRejectedValue(mockError);
+
+      const mockOnError = vi.fn();
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+        onError: mockOnError,
+      });
+
+      // Modify the product name
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Updated Product");
+
+      const submitButton = screen.getByRole("button", {
+        name: /update product/i,
+      });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(mockUpdateProduct.mutateAsync).toHaveBeenCalled();
+      });
+
+      // Should rollback to original data
+      expect(screen.getByDisplayValue("Test Product")).toBeInTheDocument();
+      expect(mockOnError).toHaveBeenCalledWith(mockError);
+      expect(mockOnClose).not.toHaveBeenCalled();
+    });
+
+    it("resets to original data when reset button is clicked", async () => {
+      const user = userEvent.setup();
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      // Modify the product name
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Modified Product");
+
+      expect(screen.getByDisplayValue("Modified Product")).toBeInTheDocument();
+
+      // Click reset button
+      const resetButton = screen.getByRole("button", { name: /reset/i });
+      await user.click(resetButton);
+
+      // Should revert to original data
+      expect(screen.getByDisplayValue("Test Product")).toBeInTheDocument();
+    });
+
+    it("shows unsaved changes warning in edit mode", async () => {
+      const user = userEvent.setup();
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      // Modify the product name
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Modified Product");
+
+      // Try to close
+      const closeButton = screen.getByRole("button", {
+        name: /close product form/i,
+      });
+      await user.click(closeButton);
+
+      expect(screen.getByText("Unsaved Changes")).toBeInTheDocument();
+      expect(screen.getByText("Continue Editing")).toBeInTheDocument();
+      expect(screen.getByText("Discard Changes")).toBeInTheDocument();
+    });
+
+    it("tracks unsaved changes correctly in edit mode", async () => {
+      const user = userEvent.setup();
+      const mockOnUnsavedChanges = vi.fn();
+
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+        onUnsavedChanges: mockOnUnsavedChanges,
+      });
+
+      // Initially no unsaved changes
+      expect(mockOnUnsavedChanges).toHaveBeenCalledWith(false);
+
+      // Modify the product name
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Modified Product");
+
+      // Should detect unsaved changes
+      await waitFor(() => {
+        expect(mockOnUnsavedChanges).toHaveBeenCalledWith(true);
+      });
+
+      // Revert back to original
+      await user.clear(nameInput);
+      await user.type(nameInput, "Test Product");
+
+      // Should detect no unsaved changes
+      await waitFor(() => {
+        expect(mockOnUnsavedChanges).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it("validates edit operations correctly", async () => {
+      const user = userEvent.setup();
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      // Clear required field
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+
+      const submitButton = screen.getByRole("button", {
+        name: /update product/i,
+      });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Product name is required")
+        ).toBeInTheDocument();
+      });
+
+      expect(mockUpdateProduct.mutateAsync).not.toHaveBeenCalled();
+    });
+
+    it("shows loading state during update", () => {
+      vi.mocked(apiHooks.useUpdateProduct).mockReturnValue({
+        ...mockUpdateProduct,
+        isPending: true,
+      } as any);
+
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      const submitButton = screen.getByRole("button", { name: /updating/i });
+      expect(submitButton).toBeDisabled();
+      expect(screen.getByText("Updating...")).toBeInTheDocument();
+    });
+
+    it("handles confirmation dialog for discarding changes", async () => {
+      const user = userEvent.setup();
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      // Modify the product name
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Modified Product");
+
+      // Try to close
+      const closeButton = screen.getByRole("button", {
+        name: /close product form/i,
+      });
+      await user.click(closeButton);
+
+      // Confirm discard changes
+      const discardButton = screen.getByText("Discard Changes");
+      await user.click(discardButton);
+
+      expect(mockOnClose).toHaveBeenCalled();
+    });
+
+    it("handles confirmation dialog for continuing editing", async () => {
+      const user = userEvent.setup();
+      renderProductForm({
+        editMode: true,
+        initialData: mockProductData,
+      });
+
+      // Modify the product name
+      const nameInput = screen.getByDisplayValue("Test Product");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Modified Product");
+
+      // Try to close
+      const closeButton = screen.getByRole("button", {
+        name: /close product form/i,
+      });
+      await user.click(closeButton);
+
+      // Continue editing
+      const continueButton = screen.getByText("Continue Editing");
+      await user.click(continueButton);
+
+      // Should still be in edit mode
+      expect(screen.getByText("Edit Product")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Modified Product")).toBeInTheDocument();
+      expect(mockOnClose).not.toHaveBeenCalled();
     });
   });
 

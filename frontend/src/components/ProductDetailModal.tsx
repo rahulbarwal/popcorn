@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   X,
   Package,
@@ -13,28 +13,62 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Edit3,
+  Save,
+  RotateCcw,
 } from "lucide-react";
-import { ProductDetail } from "../types/api";
+import { ProductDetail, UpdateProductRequest } from "../types/api";
 import { useProduct } from "../hooks/useApi";
 import LoadingSpinner from "./LoadingSpinner";
 import { OptimizedImage } from "./OptimizedImage";
+import ProductForm from "./ProductForm";
 
 interface ProductDetailModalProps {
   productId: number | null;
   isOpen: boolean;
   onClose: () => void;
+  onProductUpdated?: (product: ProductDetail) => void;
 }
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   productId,
   isOpen,
   onClose,
+  onProductUpdated,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Modal state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
 
   // Fetch product data
-  const { data: product, isLoading, error } = useProduct(productId || 0);
+  const {
+    data: product,
+    isLoading,
+    error,
+    refetch,
+  } = useProduct(productId || 0);
+
+  // Reset edit mode when modal closes or product changes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsEditMode(false);
+      setHasUnsavedChanges(false);
+      setShowUnsavedWarning(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (productId) {
+      setIsEditMode(false);
+      setHasUnsavedChanges(false);
+      setShowUnsavedWarning(false);
+    }
+  }, [productId]);
 
   // Handle escape key, outside click, and focus management
   useEffect(() => {
@@ -45,7 +79,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        handleClose();
       }
     };
 
@@ -54,7 +88,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         modalRef.current &&
         !modalRef.current.contains(event.target as Node)
       ) {
-        onClose();
+        handleClose();
       }
     };
 
@@ -86,9 +120,11 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     document.addEventListener("keydown", handleTabKey);
     document.addEventListener("mousedown", handleClickOutside);
 
-    // Focus the close button when modal opens
+    // Focus the appropriate button when modal opens
     setTimeout(() => {
-      if (closeButtonRef.current) {
+      if (isEditMode && editButtonRef.current) {
+        editButtonRef.current.focus();
+      } else if (closeButtonRef.current) {
         closeButtonRef.current.focus();
       }
     }, 100);
@@ -107,7 +143,59 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         previouslyFocusedElement.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, isEditMode]);
+
+  // Edit mode handlers
+  const handleEditClick = () => {
+    setIsEditMode(true);
+    setHasUnsavedChanges(false);
+  };
+
+  const handleCancelEdit = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedWarning(true);
+    } else {
+      setIsEditMode(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (isEditMode && hasUnsavedChanges) {
+      setShowUnsavedWarning(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleConfirmDiscardChanges = () => {
+    setIsEditMode(false);
+    setHasUnsavedChanges(false);
+    setShowUnsavedWarning(false);
+  };
+
+  const handleContinueEditing = () => {
+    setShowUnsavedWarning(false);
+  };
+
+  const handleProductUpdateSuccess = (updatedProduct: ProductDetail) => {
+    setIsEditMode(false);
+    setHasUnsavedChanges(false);
+    setShowUnsavedWarning(false);
+
+    // Refetch the product data to get the latest version
+    refetch();
+
+    // Notify parent component
+    if (onProductUpdated) {
+      onProductUpdated(updatedProduct);
+    }
+  };
+
+  const handleProductUpdateError = (error: any) => {
+    // Keep edit mode open on error so user can retry
+    // The error will be handled by the ProductForm component
+    console.error("Product update failed:", error);
+  };
 
   // Don't render if not open
   if (!isOpen) return null;
@@ -179,16 +267,29 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               id="product-detail-title"
               className="text-lg sm:text-xl font-semibold text-gray-900"
             >
-              Product Details
+              {isEditMode ? "Edit Product" : "Product Details"}
             </h2>
-            <button
-              ref={closeButtonRef}
-              onClick={onClose}
-              className="btn btn-outline p-2 rounded-full hover:bg-gray-100 focus:ring-2 focus:ring-blue-500"
-              aria-label="Close product details modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {!isEditMode && product && (
+                <button
+                  ref={editButtonRef}
+                  onClick={handleEditClick}
+                  className="btn btn-primary flex items-center gap-2"
+                  aria-label="Edit product"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Edit
+                </button>
+              )}
+              <button
+                ref={closeButtonRef}
+                onClick={handleClose}
+                className="btn btn-outline p-2 rounded-full hover:bg-gray-100 focus:ring-2 focus:ring-blue-500"
+                aria-label="Close product details modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Modal Content */}
@@ -220,7 +321,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             )}
 
-            {product && (
+            {product && !isEditMode && (
               <div className="space-y-6">
                 {/* Product Header */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
@@ -633,17 +734,84 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </div>
 
           {/* Modal Footer */}
-          <div className="flex justify-end p-4 sm:p-6 border-t border-gray-200">
-            <button
-              onClick={onClose}
-              className="btn btn-primary"
-              aria-label="Close product details modal"
-            >
-              Close
-            </button>
-          </div>
+          {!isEditMode && (
+            <div className="flex justify-end p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={handleClose}
+                className="btn btn-primary"
+                aria-label="Close product details modal"
+              >
+                Close
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Unsaved Changes Warning Modal */}
+      {showUnsavedWarning && (
+        <div
+          className="fixed inset-0 z-60 overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unsaved-changes-title"
+        >
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+
+          {/* Warning Modal Container */}
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl transform transition-all">
+              {/* Warning Header */}
+              <div className="p-6 border-b border-gray-200">
+                <h3
+                  id="unsaved-changes-title"
+                  className="text-lg font-semibold text-gray-900"
+                >
+                  Unsaved Changes
+                </h3>
+              </div>
+
+              {/* Warning Content */}
+              <div className="p-6">
+                <p className="text-gray-600">
+                  You have unsaved changes. Are you sure you want to discard
+                  them?
+                </p>
+              </div>
+
+              {/* Warning Footer */}
+              <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={handleContinueEditing}
+                  className="btn btn-outline"
+                >
+                  Continue Editing
+                </button>
+                <button
+                  onClick={handleConfirmDiscardChanges}
+                  className="btn btn-danger"
+                >
+                  Discard Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Form Modal */}
+      {product && isEditMode && (
+        <ProductForm
+          isOpen={true}
+          onClose={handleCancelEdit}
+          onSuccess={handleProductUpdateSuccess}
+          onError={handleProductUpdateError}
+          editMode={true}
+          initialData={product}
+          onUnsavedChanges={setHasUnsavedChanges}
+        />
+      )}
     </div>
   );
 };

@@ -438,8 +438,8 @@
   - Write component tests for enhanced product form functionality
   - _Requirements: 14.9, 14.10, 14.11, 14.12, 19.9, 19.10_
 
-- [ ] 25. Build product edit functionality
-- [ ] 25.1 Create edit mode for product detail modal
+- [x] 25. Build product edit functionality
+- [x] 25.1 Create edit mode for product detail modal
 
   - Add "Edit" button to product detail modal
   - Implement modal state switching between view and edit modes
@@ -448,7 +448,7 @@
   - Add save and cancel buttons with appropriate actions
   - _Requirements: 15.1, 15.2, 15.3, 15.5, 15.8, 15.9_
 
-- [ ] 25.2 Integrate edit functionality with form validation
+- [x] 25.2 Integrate edit functionality with form validation
 
   - Connect edit mode to product form component
   - Implement validation for edit operations
