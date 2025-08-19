@@ -16,6 +16,7 @@ import {
   Edit3,
   Save,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { ProductDetail, UpdateProductRequest } from "../types/api";
 import { useProduct } from "../hooks/useApi";
@@ -28,6 +29,7 @@ interface ProductDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProductUpdated?: (product: ProductDetail) => void;
+  onDeleteProduct?: (product: ProductDetail) => void;
 }
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -35,6 +37,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   isOpen,
   onClose,
   onProductUpdated,
+  onDeleteProduct,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -271,15 +274,27 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </h2>
             <div className="flex items-center gap-2">
               {!isEditMode && product && (
-                <button
-                  ref={editButtonRef}
-                  onClick={handleEditClick}
-                  className="btn btn-primary flex items-center gap-2"
-                  aria-label="Edit product"
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Edit
-                </button>
+                <>
+                  <button
+                    ref={editButtonRef}
+                    onClick={handleEditClick}
+                    className="btn btn-primary flex items-center gap-2"
+                    aria-label="Edit product"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Edit
+                  </button>
+                  {onDeleteProduct && (
+                    <button
+                      onClick={() => onDeleteProduct(product)}
+                      className="btn btn-danger flex items-center gap-2"
+                      aria-label="Delete product"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  )}
+                </>
               )}
               <button
                 ref={closeButtonRef}

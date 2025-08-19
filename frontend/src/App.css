@@ -113,6 +113,23 @@ body {
   border-color: #9ca3af;
 }
 
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.btn-danger:active {
+  background-color: #991b1b;
+  transform: translateY(0);
+}
+
 /* Button sizes */
 .btn-sm {
   padding: 0.375rem 0.75rem;

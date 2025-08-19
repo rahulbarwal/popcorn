@@ -3,15 +3,22 @@ import Breadcrumb from "../components/Breadcrumb";
 import ProductsTable from "../components/ProductsTable";
 import ProductSearchAndFilters from "../components/ProductSearchAndFilters";
 import ProductDetailModal from "../components/ProductDetailModal";
+import ProductDeleteConfirmation from "../components/ProductDeleteConfirmation";
 import { Plus } from "lucide-react";
-import { Product, SearchFilters } from "../types/api";
+import { Product, ProductDetail, SearchFilters } from "../types/api";
+import { useDeleteProduct, useProduct } from "../hooks/useApi";
 
 const Products = () => {
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
+
+  // Hooks for delete functionality
+  const deleteProductMutation = useDeleteProduct();
+  const { data: productDetailForDelete } = useProduct(productToDelete?.id || 0);
 
   const breadcrumbItems = [
     { label: "Dashboard", href: "/" },
@@ -29,14 +36,26 @@ const Products = () => {
   };
 
   const handleDeleteProduct = (product: Product) => {
-    setSelectedProduct(product);
+    setProductToDelete(product);
     setShowDeleteConfirm(true);
-    // TODO: Implement delete confirmation in task 26
-    console.log(
-      "Delete Product clicked:",
-      product.name,
-      "- will be implemented in task 26"
-    );
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+
+    try {
+      await deleteProductMutation.mutateAsync(productToDelete.id);
+      setShowDeleteConfirm(false);
+      setProductToDelete(null);
+    } catch (error) {
+      // Error is handled by the mutation hook
+      console.error("Delete failed:", error);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setProductToDelete(null);
   };
 
   const handleFiltersChange = (filters: SearchFilters) => {
@@ -141,6 +160,20 @@ const Products = () => {
         productId={selectedProduct?.id || null}
         isOpen={showProductDetail}
         onClose={handleCloseProductDetail}
+        onDeleteProduct={(product) => {
+          setShowProductDetail(false);
+          setSelectedProduct(null);
+          handleDeleteProduct(product);
+        }}
+      />
+
+      {/* Product Delete Confirmation Modal */}
+      <ProductDeleteConfirmation
+        product={productDetailForDelete || null}
+        isOpen={showDeleteConfirm}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        isDeleting={deleteProductMutation.isPending}
       />
     </main>
   );
